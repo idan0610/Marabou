@@ -19,7 +19,8 @@
 
 #include "InputQuery.h"
 
-#define QL_LOG( x, ... ) LOG( GlobalConfiguration::QUERY_LOADER_LOGGING, "QueryLoader: %s\n", x )
+#define QL_LOG( x, ... )                                                                           \
+    MARABOU_LOG( GlobalConfiguration::QUERY_LOADER_LOGGING, "QueryLoader: %s\n", x )
 
 class QueryLoader
 {

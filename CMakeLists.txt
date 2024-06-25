@@ -179,6 +179,26 @@ if (${ENABLE_GUROBI})
 endif()
 
 ##############
+#### Torch ###
+##############
+
+if (NOT TORCH_DIR)
+    set(TORCH_DIR "${TOOLS_DIR}/libtorch")
+endif()
+
+#if(NOT EXISTS "${TORCH_DIR}/build")
+#    message("downloading libtorch")
+#    execute_process(COMMAND ${TOOLS_DIR}/build_torch.sh)
+#endif()
+
+set(TORCH_LIB torch)
+add_library(${TORCH_LIB} SHARED IMPORTED)
+set_target_properties(${TORCH_LIB} PROPERTIES IMPORTED_LOCATION ${TORCH_DIR}/lib/libtorch.so)
+target_include_directories(${TORCH_LIB} INTERFACE ${TORCH_DIR}/include)
+target_include_directories(${TORCH_LIB} INTERFACE ${TORCH_DIR}/include/torch/csrc/api/include)
+list(APPEND LIBS ${TORCH_LIB})
+
+##############
 ## OpenBLAS ##
 ##############
 
