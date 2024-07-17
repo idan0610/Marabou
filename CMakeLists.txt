@@ -94,10 +94,11 @@ else()
 endif()
 
 set(Boost_USE_DEBUG_RUNTIME FALSE)
-find_package(Boost ${BOOST_VERSION} COMPONENTS program_options timer chrono thread)
+find_package(Boost ${BOOST_VERSION} QUIET COMPONENTS program_options timer chrono thread)
 # Find boost
 if (NOT ${Boost_FOUND})
   execute_process(COMMAND ${TOOLS_DIR}/download_boost.${SCRIPT_EXTENSION} ${BOOST_VERSION})
+  set(Boost_NO_SYSTEM_PATHS ON)
   find_package(Boost ${BOOST_VERSION} REQUIRED COMPONENTS program_options timer chrono thread)
 endif()
 set(LIBS_INCLUDES ${Boost_INCLUDE_DIRS})
