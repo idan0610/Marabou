@@ -299,6 +299,8 @@ public:
     */
     void propagateBoundManagerTightenings();
 
+    const List<PiecewiseLinearConstraint *> &getPiecewiseLinearConstraints() const;
+
 private:
     enum BasisRestorationRequired {
         RESTORATION_NOT_NEEDED = 0,

@@ -154,6 +154,7 @@ void SmtCore::performSplit()
     {
         _statistics->incUnsignedAttribute( Statistics::NUM_SPLITS );
         _statistics->incUnsignedAttribute( Statistics::NUM_VISITED_TREE_STATES );
+        printCurrentState();
     }
 
     // Before storing the state of the engine, we:
@@ -275,6 +276,7 @@ bool SmtCore::popSplit()
         // A pop always sends us to a state that we haven't seen before - whether
         // from a sibling split, or from a lower level of the tree.
         _statistics->incUnsignedAttribute( Statistics::NUM_VISITED_TREE_STATES );
+        printCurrentState();
     }
 
     bool inconsistent = true;
@@ -562,6 +564,7 @@ void SmtCore::replaySmtStackEntry( SmtStackEntry *stackEntry )
     {
         _statistics->incUnsignedAttribute( Statistics::NUM_SPLITS );
         _statistics->incUnsignedAttribute( Statistics::NUM_VISITED_TREE_STATES );
+        printCurrentState();
     }
 
     // Obtain the current state of the engine
@@ -607,4 +610,20 @@ bool SmtCore::pickSplitPLConstraint()
         _constraintForSplitting = _engine->pickSplitPLConstraint( _branchingHeuristic );
     }
     return _constraintForSplitting != NULL;
+}
+
+void SmtCore::printCurrentState() const
+{
+    std::cout << "State #"
+              << _statistics->getUnsignedAttribute( Statistics::NUM_VISITED_TREE_STATES ) <<
+        ": ";
+    int i = 1;
+    for ( const auto *plc : _engine->getPiecewiseLinearConstraints()) {
+        if (plc->getPhaseStatus() == RELU_PHASE_ACTIVE)
+            std::cout << i << " ";
+        else if(plc->getPhaseStatus() == RELU_PHASE_INACTIVE)
+            std::cout << -i << " ";
+        ++i;
+    }
+    std::cout << std::endl;
 }

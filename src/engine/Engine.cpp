@@ -228,6 +228,9 @@ bool Engine::solve( double timeoutInSeconds )
 
     bool splitJustPerformed = true;
     struct timespec mainLoopStart = TimeUtils::sampleMicro();
+
+    _smtCore.printCurrentState();
+
     while ( true )
     {
         struct timespec mainLoopEnd = TimeUtils::sampleMicro();
@@ -3813,4 +3816,9 @@ void Engine::extractBounds( InputQuery &inputQuery )
             inputQuery.setUpperBound( i, _preprocessedQuery->getUpperBound( i ) );
         }
     }
+}
+
+const List<PiecewiseLinearConstraint *> &Engine::getPiecewiseLinearConstraints() const
+{
+    return _plConstraints;
 }

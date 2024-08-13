@@ -184,6 +184,8 @@ public:
       Propagate bound tightenings stored in the BoundManager
     */
     virtual void propagateBoundManagerTightenings() = 0;
+
+    virtual const List<PiecewiseLinearConstraint *> &getPiecewiseLinearConstraints() const = 0;
 };
 
 #endif // __IEngine_h__
