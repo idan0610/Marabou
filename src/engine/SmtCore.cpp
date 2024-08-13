@@ -616,7 +616,7 @@ void SmtCore::printCurrentState() const
 {
     std::cout << "State #"
               << _statistics->getUnsignedAttribute( Statistics::NUM_VISITED_TREE_STATES ) <<
-        ": ";
+        " Time " << _statistics->getTotalTimeInMicro() << " : ";
     int i = 1;
     for ( const auto *plc : _engine->getPiecewiseLinearConstraints()) {
         if (plc->getPhaseStatus() == RELU_PHASE_ACTIVE)
