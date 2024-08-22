@@ -286,6 +286,12 @@ public:
     {
         return true;
     }
+
+    List<PiecewiseLinearConstraint *> _plcs;
+    const List<PiecewiseLinearConstraint *> &getPiecewiseLinearConstraints() const
+    {
+        return _plcs;
+    }
 };
 
 #endif // __MockEngine_h__
