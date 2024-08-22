@@ -229,7 +229,7 @@ bool Engine::solve( double timeoutInSeconds )
     bool splitJustPerformed = true;
     struct timespec mainLoopStart = TimeUtils::sampleMicro();
 
-    _smtCore.printCurrentState();
+//    _smtCore.printCurrentState();
 
     while ( true )
     {
