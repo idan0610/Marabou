@@ -2718,9 +2718,9 @@ void Engine::decideBranchingHeuristics()
             }
             else
             {
-                divideStrategy = DivideStrategy::ReLUViolation;
+                divideStrategy = DivideStrategy::Polarity;
                 if ( _verbosity >= 2 )
-                    printf( "Branching heuristics set to ReLUViolation\n" );
+                    printf( "Branching heuristics set to Polarity\n" );
             }
         }
     }
