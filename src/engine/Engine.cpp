@@ -2824,8 +2824,6 @@ PiecewiseLinearConstraint *Engine::pickSplitPLConstraint( DivideStrategy strateg
 {
     ENGINE_LOG( Stringf( "Picking a split PLConstraint..." ).ascii() );
 
-    updateDirections();
-
     PiecewiseLinearConstraint *candidatePLConstraint = NULL;
     if ( strategy == DivideStrategy::PseudoImpact )
     {
