@@ -77,10 +77,13 @@ void DeepPolyReLUElement::execute( const Map<unsigned, DeepPolyElement *> &deepP
             // ReLU not fixed
             // Symbolic upper bound: x_f <= (x_b - l) * u / ( u - l)
             // Concrete upper bound: x_f <= ub_b
-            double coeff = sourceUb / ( sourceUb - sourceLb );
+            double sourceLbAfterSplit = predecessor->getLowerBoundAfterSplit( sourceIndex._neuron );
+            double sourceUbAfterSplit = predecessor->getUpperBoundAfterSplit( sourceIndex._neuron );
+
+            double coeff = sourceUbAfterSplit / ( sourceUbAfterSplit - sourceLbAfterSplit );
             _symbolicUb[i] = coeff;
-            _symbolicUpperBias[i] = -sourceLb * coeff;
-            _ub[i] = sourceUb;
+            _symbolicUpperBias[i] = -sourceLbAfterSplit * coeff;
+            _ub[i] = sourceUbAfterSplit;
 
             // For the lower bound, in general, x_f >= lambda * x_b, where
             // 0 <= lambda <= 1, would be a sound lower bound. We
@@ -94,7 +97,7 @@ void DeepPolyReLUElement::execute( const Map<unsigned, DeepPolyElement *> &deepP
                 // Concrete lower bound: x_f >= sourceLb
                 _symbolicLb[i] = 1;
                 _symbolicLowerBias[i] = 0;
-                _lb[i] = sourceLb;
+                _lb[i] = sourceLbAfterSplit;
             }
             else
             {

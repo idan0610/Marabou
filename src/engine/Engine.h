@@ -538,6 +538,9 @@ private:
 
     LinearExpression _heuristicCost;
 
+    List<SparseUnsortedList> _deepPolyFictiveRows;
+    Map<unsigned, double> _deepPolyAuxBounds;
+
     /*
       Perform a simplex step: compute the cost function, pick the
       entering and leaving variables and perform a pivot.
@@ -897,6 +900,8 @@ private:
       Writes the details of a contradiction to the UNSAT certificate node
     */
     void writeContradictionToCertificate( unsigned infeasibleVar ) const;
+
+    void collectDeepPolySymbolicConstraintsAndBounds();
 };
 
 #endif // __Engine_h__

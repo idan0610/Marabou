@@ -1089,6 +1089,35 @@ void ReluConstraint::addTableauAuxVar( unsigned tableauAuxVar, unsigned constrai
         _tableauAuxVars.append( tableauAuxVar );
 }
 
+SparseUnsortedList ReluConstraint::getDeepPolyFictiveRow() const
+{
+    SparseUnsortedList fictiveRow;
+    double bLb = _boundManager->getLowerBound( _b );
+    double bUb = _boundManager->getUpperBound( _b );
+
+    fictiveRow.append( _f, -1 );
+    fictiveRow.append( _b, bUb / ( bUb - bLb ) );
+    fictiveRow.append( _deepPolyAuxVars.front(), 1 );
+
+    return fictiveRow;
+}
+
+double ReluConstraint::getDeepPolyAuxBound( unsigned int aux ) const
+{
+    if ( aux == _deepPolyAuxVars.front() )
+    {
+        double bLb = _boundManager->getLowerBound( _b );
+        double bUb = _boundManager->getUpperBound( _b );
+
+        return -( bUb * bLb ) / ( bUb - bLb );
+    }
+    else
+    {
+        ASSERT( false );
+        return 0;
+    }
+}
+
 //
 // Local Variables:
 // compile-command: "make -C ../.. "

@@ -121,6 +121,7 @@ public:
 
     void obtainCurrentBounds( const InputQuery &inputQuery );
     void obtainCurrentBounds();
+    void obtainCurrentBoundsAfterSplit();
     void intervalArithmeticBoundPropagation();
     void symbolicBoundPropagation();
     void deepPolyPropagation();

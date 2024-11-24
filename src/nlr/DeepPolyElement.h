@@ -79,6 +79,9 @@ public:
     double getLowerBoundFromLayer( unsigned index ) const;
     double getUpperBoundFromLayer( unsigned index ) const;
 
+    double getLowerBoundAfterSplit( unsigned index ) const;
+    double getUpperBoundAfterSplit( unsigned index ) const;
+
 protected:
     Layer *_layer;
     unsigned _size;

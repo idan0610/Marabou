@@ -323,6 +323,13 @@ void NetworkLevelReasoner::obtainCurrentBounds()
         layer.second->obtainCurrentBounds();
 }
 
+void NetworkLevelReasoner::obtainCurrentBoundsAfterSplit()
+{
+    ASSERT( _tableau );
+    for (const auto &layer : _layerIndexToLayer)
+        layer.second->obtainCurrentBoundsAfterSplit();
+}
+
 void NetworkLevelReasoner::setTableau( const ITableau *tableau )
 {
     _tableau = tableau;

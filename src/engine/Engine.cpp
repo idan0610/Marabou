@@ -229,7 +229,7 @@ bool Engine::solve( double timeoutInSeconds )
     bool splitJustPerformed = true;
     struct timespec mainLoopStart = TimeUtils::sampleMicro();
 
-//    _smtCore.printCurrentState();
+    //    _smtCore.printCurrentState();
 
     while ( true )
     {
@@ -483,6 +483,8 @@ void Engine::mainLoopStatistics()
 
 void Engine::performBoundTighteningAfterCaseSplit()
 {
+    _networkLevelReasoner->obtainCurrentBoundsAfterSplit();
+
     // Tighten bounds of a first hidden layer with MILP solver
     performMILPSolverBoundedTighteningForSingleLayer( 1 );
     do
@@ -1383,6 +1385,7 @@ void Engine::initializeTableau( const double *constraintMatrix, const List<unsig
 void Engine::initializeBoundsAndConstraintWatchersInTableau( unsigned numberOfVariables )
 {
     _plConstraints = _preprocessedQuery->getPiecewiseLinearConstraints();
+    unsigned deepPolyAuxVarsCounter = 0;
     for ( const auto &constraint : _plConstraints )
     {
         constraint->registerAsWatcher( _tableau );
@@ -1392,9 +1395,14 @@ void Engine::initializeBoundsAndConstraintWatchersInTableau( unsigned numberOfVa
         // tableau, to the constraint
         if ( _produceUNSATProofs )
             for ( unsigned var : constraint->getNativeAuxVars() )
+            {
                 if ( _preprocessedQuery->_lastAddendToAux.exists( var ) )
                     constraint->addTableauAuxVar( _preprocessedQuery->_lastAddendToAux.at( var ),
                                                   var );
+
+                constraint->addDeepPolyAuxVar( numberOfVariables + deepPolyAuxVarsCounter );
+                ++deepPolyAuxVarsCounter;
+            }
     }
 
     _nlConstraints = _preprocessedQuery->getNonlinearConstraints();
@@ -3821,4 +3829,18 @@ void Engine::extractBounds( InputQuery &inputQuery )
 const List<PiecewiseLinearConstraint *> &Engine::getPiecewiseLinearConstraints() const
 {
     return _plConstraints;
+}
+
+void Engine::collectDeepPolySymbolicConstraintsAndBounds()
+{
+    _deepPolyFictiveRows.clear();
+
+    for ( const PiecewiseLinearConstraint *plc : _plConstraints )
+    {
+        _deepPolyFictiveRows.append( plc->getDeepPolyFictiveRow() );
+        for ( unsigned aux : plc->getDeepPolyAuxVars() )
+        {
+            _deepPolyAuxBounds[aux] = plc->getDeepPolyAuxBound( aux );
+        }
+    }
 }

@@ -41,6 +41,8 @@ Layer::Layer( unsigned index, Type type, unsigned size, LayerOwner *layerOwner )
     , _assignment( NULL )
     , _lb( NULL )
     , _ub( NULL )
+    , _lbAfterSplit( NULL )
+    , _ubAfterSplit( NULL )
     , _inputLayerSize( 0 )
     , _symbolicLb( NULL )
     , _symbolicUb( NULL )
@@ -67,6 +69,12 @@ void Layer::allocateMemory()
 
     std::fill_n( _lb, _size, 0 );
     std::fill_n( _ub, _size, 0 );
+
+    _lbAfterSplit = new double[_size];
+    _ubAfterSplit = new double[_size];
+
+    std::fill_n( _lbAfterSplit, _size, 0 );
+    std::fill_n( _ubAfterSplit, _size, 0 );
 
     _assignment = new double[_size];
 
@@ -608,6 +616,25 @@ void Layer::obtainCurrentBounds()
     }
 }
 
+void Layer::obtainCurrentBoundsAfterSplit()
+{
+    for ( unsigned i = 0; i < _size; ++i )
+    {
+        if ( _neuronToVariable.exists( i ) )
+        {
+            unsigned variable = _neuronToVariable[i];
+            _lbAfterSplit[i] = _layerOwner->getTableau()->getLowerBound( variable );
+            _ubAfterSplit[i] = _layerOwner->getTableau()->getUpperBound( variable );
+        }
+        else
+        {
+            ASSERT( _eliminatedNeurons.exists( i ) );
+            _lbAfterSplit[i] = _eliminatedNeurons[i];
+            _ubAfterSplit[i] = _eliminatedNeurons[i];
+        }
+    }
+}
+
 double Layer::getLb( unsigned neuron ) const
 {
     if ( _eliminatedNeurons.exists( neuron ) )
@@ -622,6 +649,22 @@ double Layer::getUb( unsigned neuron ) const
         return _eliminatedNeurons[neuron];
 
     return _ub[neuron];
+}
+
+double Layer::getLbAfterSplit( unsigned int neuron ) const
+{
+    if ( _eliminatedNeurons.exists( neuron ) )
+        return _eliminatedNeurons[neuron];
+
+    return _lbAfterSplit[neuron];
+}
+
+double Layer::getUbAfterSplit( unsigned int neuron ) const
+{
+    if ( _eliminatedNeurons.exists( neuron ) )
+        return _eliminatedNeurons[neuron];
+
+    return _ubAfterSplit[neuron];
 }
 
 double *Layer::getLbs() const
@@ -644,6 +687,18 @@ void Layer::setUb( unsigned neuron, double bound )
 {
     ASSERT( !_eliminatedNeurons.exists( neuron ) );
     _ub[neuron] = bound;
+}
+
+void Layer::setLbAfterSplit( unsigned int neuron, double bound )
+{
+    ASSERT( !_eliminatedNeurons.exists( neuron ) );
+    _lbAfterSplit[neuron] = bound;
+}
+
+void Layer::setUbAfterSplit( unsigned int neuron, double bound )
+{
+    ASSERT( !_eliminatedNeurons.exists( neuron ) );
+    _ubAfterSplit[neuron] = bound;
 }
 
 void Layer::computeIntervalArithmeticBounds()
@@ -1822,6 +1877,18 @@ void Layer::freeMemoryIfNeeded()
     {
         delete[] _ub;
         _ub = NULL;
+    }
+
+    if ( _lbAfterSplit )
+    {
+        delete[] _lbAfterSplit;
+        _lbAfterSplit = NULL;
+    }
+
+    if ( _ubAfterSplit )
+    {
+        delete[] _ubAfterSplit;
+        _ubAfterSplit = NULL;
     }
 
     if ( _symbolicLb )

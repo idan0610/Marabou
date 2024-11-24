@@ -473,6 +473,14 @@ public:
     virtual void addTableauAuxVar( unsigned tableauAuxVar, unsigned constraintAuxVar ) = 0;
 
     /*
+      Add a variable to the list of aux vars designated in DeepPoly, used for proof production
+    */
+    virtual void addDeepPolyAuxVar( unsigned deepPolyAuxVar )
+    {
+        _deepPolyAuxVars.append(deepPolyAuxVar);
+    }
+
+    /*
       Get the native auxiliary vars
     */
     virtual const List<unsigned> getNativeAuxVars() const
@@ -486,6 +494,24 @@ public:
     virtual const List<unsigned> &getTableauAuxVars() const
     {
         return _tableauAuxVars;
+    }
+
+    /*
+      Get the deepPoly auxiliary vars
+     */
+    virtual const List<unsigned> &getDeepPolyAuxVars() const
+    {
+        return _deepPolyAuxVars;
+    }
+
+    virtual SparseUnsortedList getDeepPolyFictiveRow() const
+    {
+        return {};
+    }
+
+    virtual double getDeepPolyAuxBound(unsigned /*aux*/) const
+    {
+        return 0;
     }
 
 protected:
@@ -634,6 +660,8 @@ protected:
     }
 
     List<unsigned> _tableauAuxVars;
+
+    List<unsigned> _deepPolyAuxVars;
 };
 
 #endif // __PiecewiseLinearConstraint_h__

@@ -122,6 +122,11 @@ public:
     double getLb( unsigned neuron ) const;
     double getUb( unsigned neuron ) const;
 
+    void setLbAfterSplit( unsigned neuron, double bound );
+    void setUbAfterSplit( unsigned neuron, double bound );
+    double getLbAfterSplit( unsigned neuron ) const;
+    double getUbAfterSplit( unsigned neuron ) const;
+
     double *getLbs() const;
     double *getUbs() const;
 
@@ -136,6 +141,7 @@ public:
 
     void obtainCurrentBounds( const InputQuery &inputQuery );
     void obtainCurrentBounds();
+    void obtainCurrentBoundsAfterSplit();
     void computeSymbolicBounds();
     void computeIntervalArithmeticBounds();
 
@@ -183,6 +189,9 @@ private:
 
     double *_lb;
     double *_ub;
+
+    double *_lbAfterSplit;
+    double *_ubAfterSplit;
 
     Map<unsigned, List<NeuronIndex>> _neuronToActivationSources;
 
