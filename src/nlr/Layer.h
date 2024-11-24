@@ -169,6 +169,8 @@ public:
     bool compareWeights( const Map<unsigned, double *> &map,
                          const Map<unsigned, double *> &mapOfOtherLayer ) const;
 
+    bool isBoundsAfterSplitInitialized() const;
+
 private:
     unsigned _layerIndex;
     Type _type;

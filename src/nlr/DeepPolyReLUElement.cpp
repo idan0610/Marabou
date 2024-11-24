@@ -77,8 +77,16 @@ void DeepPolyReLUElement::execute( const Map<unsigned, DeepPolyElement *> &deepP
             // ReLU not fixed
             // Symbolic upper bound: x_f <= (x_b - l) * u / ( u - l)
             // Concrete upper bound: x_f <= ub_b
-            double sourceLbAfterSplit = predecessor->getLowerBoundAfterSplit( sourceIndex._neuron );
-            double sourceUbAfterSplit = predecessor->getUpperBoundAfterSplit( sourceIndex._neuron );
+
+            double sourceLbAfterSplit = sourceLb;
+            double sourceUbAfterSplit = sourceUb;
+            if (_layer->isBoundsAfterSplitInitialized())
+            {
+                sourceLbAfterSplit = predecessor->getLowerBoundAfterSplit( sourceIndex._neuron );
+                sourceUbAfterSplit = predecessor->getUpperBoundAfterSplit( sourceIndex._neuron );
+            }
+
+            ASSERT(sourceLbAfterSplit <= sourceLb && sourceUbAfterSplit >= sourceUb);
 
             double coeff = sourceUbAfterSplit / ( sourceUbAfterSplit - sourceLbAfterSplit );
             _symbolicUb[i] = coeff;

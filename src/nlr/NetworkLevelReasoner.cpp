@@ -41,6 +41,7 @@ namespace NLR {
 NetworkLevelReasoner::NetworkLevelReasoner()
     : _tableau( NULL )
     , _deepPolyAnalysis( nullptr )
+    , _boundsAfterSplitInitialized( false )
 {
 }
 
@@ -328,6 +329,8 @@ void NetworkLevelReasoner::obtainCurrentBoundsAfterSplit()
     ASSERT( _tableau );
     for (const auto &layer : _layerIndexToLayer)
         layer.second->obtainCurrentBoundsAfterSplit();
+
+    _boundsAfterSplitInitialized = true;
 }
 
 void NetworkLevelReasoner::setTableau( const ITableau *tableau )
@@ -809,6 +812,11 @@ unsigned NetworkLevelReasoner::getMaxLayerSize() const
 const Map<unsigned, Layer *> &NetworkLevelReasoner::getLayerIndexToLayer() const
 {
     return _layerIndexToLayer;
+}
+
+bool NetworkLevelReasoner::isBoundsAfterSplitInitialized() const
+{
+    return _boundsAfterSplitInitialized;
 }
 
 } // namespace NLR

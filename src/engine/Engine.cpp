@@ -276,6 +276,9 @@ bool Engine::solve( double timeoutInSeconds )
                      0 )
                 _statistics.print();
 
+            if ( splitJustPerformed )
+                _networkLevelReasoner->obtainCurrentBoundsAfterSplit();
+
             if ( _lpSolverType == LPSolverType::NATIVE )
             {
                 checkOverallProgress();
@@ -483,8 +486,6 @@ void Engine::mainLoopStatistics()
 
 void Engine::performBoundTighteningAfterCaseSplit()
 {
-    _networkLevelReasoner->obtainCurrentBoundsAfterSplit();
-
     // Tighten bounds of a first hidden layer with MILP solver
     performMILPSolverBoundedTighteningForSingleLayer( 1 );
     do

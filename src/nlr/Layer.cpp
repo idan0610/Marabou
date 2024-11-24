@@ -2231,4 +2231,9 @@ void Layer::dumpBounds() const
     printf( "\n" );
 }
 
+bool Layer::isBoundsAfterSplitInitialized() const
+{
+    return _layerOwner->isBoundsAfterSplitInitialized();
+}
+
 } // namespace NLR
