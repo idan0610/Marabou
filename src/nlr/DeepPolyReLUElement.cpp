@@ -105,7 +105,7 @@ void DeepPolyReLUElement::execute( const Map<unsigned, DeepPolyElement *> &deepP
                 // Concrete lower bound: x_f >= sourceLb
                 _symbolicLb[i] = 1;
                 _symbolicLowerBias[i] = 0;
-                _lb[i] = sourceLbAfterSplit;
+                _lb[i] = sourceLb;
             }
             else
             {
