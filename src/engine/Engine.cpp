@@ -192,17 +192,19 @@ bool Engine::solve( double timeoutInSeconds )
     SignalHandler::getInstance()->initialize();
     SignalHandler::getInstance()->registerClient( this );
 
-    if ( _produceUNSATProofs )
-    {
-        _networkLevelReasoner->produceUNSATProofs();
-        _networkLevelReasoner->initializeMappingFromVariableToDeepPolyAux();
-    }
 
     // Register the boundManager with all the PL constraints
     for ( auto &plConstraint : _plConstraints )
         plConstraint->registerBoundManager( &_boundManager );
     for ( auto &nlConstraint : _nlConstraints )
         nlConstraint->registerBoundManager( &_boundManager );
+
+    if ( _produceUNSATProofs )
+    {
+        _networkLevelReasoner->produceUNSATProofs();
+        _networkLevelReasoner->initializeMappingFromVariableToDeepPolyAux();
+        collectDeepPolySymbolicConstraintsAndBounds();
+    }
 
     // Before encoding, make sure all valid constraints are applied.
     applyAllValidConstraintCaseSplits();
@@ -1401,15 +1403,15 @@ void Engine::initializeBoundsAndConstraintWatchersInTableau( unsigned numberOfVa
         // Assuming aux var is use, add the constraint's auxiliary variable assigned to it in the
         // tableau, to the constraint
         if ( _produceUNSATProofs )
+        {
             for ( unsigned var : constraint->getNativeAuxVars() )
-            {
                 if ( _preprocessedQuery->_lastAddendToAux.exists( var ) )
                     constraint->addTableauAuxVar( _preprocessedQuery->_lastAddendToAux.at( var ),
                                                   var );
 
-                constraint->addDeepPolyAuxVar( numberOfVariables + deepPolyAuxVarsCounter );
-                ++deepPolyAuxVarsCounter;
-            }
+            constraint->addDeepPolyAuxVar( numberOfVariables + deepPolyAuxVarsCounter );
+            ++deepPolyAuxVarsCounter;
+        }
     }
 
     _nlConstraints = _preprocessedQuery->getNonlinearConstraints();
@@ -1514,10 +1516,11 @@ bool Engine::processInputQuery( InputQuery &inputQuery, bool preprocess )
             constraintMatrix = createConstraintMatrix();
 
             unsigned n = _preprocessedQuery->getNumberOfVariables();
-            _boundManager.initialize( n );
+            _boundManager.initialize( n + _plConstraints.size() );
 
             initializeTableau( constraintMatrix, initialBasis );
-            _boundManager.initializeBoundExplainer( n, _tableau->getM() );
+            _boundManager.initializeBoundExplainer( n + _plConstraints.size(),
+                                                    _tableau->getM() + _plConstraints.size() );
             delete[] constraintMatrix;
 
             if ( _produceUNSATProofs )
@@ -1525,7 +1528,7 @@ bool Engine::processInputQuery( InputQuery &inputQuery, bool preprocess )
                 _UNSATCertificate = new UnsatCertificateNode( NULL, PiecewiseLinearCaseSplit() );
                 _UNSATCertificateCurrentPointer->set( _UNSATCertificate );
                 _UNSATCertificate->setVisited();
-                _groundBoundManager.initialize( n );
+                _groundBoundManager.initialize( n + _plConstraints.size() );
 
                 for ( unsigned i = 0; i < n; ++i )
                 {
@@ -2135,6 +2138,8 @@ void Engine::applySplit( const PiecewiseLinearCaseSplit &split )
                 _boundManager.tightenUpperBound( variable, bound._value );
         }
     }
+
+    collectDeepPolySymbolicConstraintsAndBounds();
 
     if ( _produceUNSATProofs && _UNSATCertificateCurrentPointer )
         ( **_UNSATCertificateCurrentPointer ).setVisited();
@@ -3743,8 +3748,8 @@ void Engine::markLeafToDelegate()
 const Vector<double> Engine::computeContradiction( unsigned infeasibleVar ) const
 {
     ASSERT( _produceUNSATProofs );
-
-    unsigned m = _tableau->getM();
+    // TODO use bound explainer numberofrows
+    unsigned m = _tableau->getM() + _plConstraints.size();
     SparseUnsortedList upperBoundExplanation( 0 );
     SparseUnsortedList lowerBoundExplanation( 0 );
 
@@ -3853,7 +3858,8 @@ void Engine::collectDeepPolySymbolicConstraintsAndBounds()
         _deepPolyFictiveRows.append( plc->getDeepPolyFictiveRow() );
         for ( unsigned aux : plc->getDeepPolyAuxVars() )
         {
-            _deepPolyAuxBounds[aux] = plc->getDeepPolyAuxBound( aux );
+            _groundBoundManager.setLowerBound( aux, plc->getDeepPolyAuxBound( aux ) );
+            _groundBoundManager.setUpperBound( aux, plc->getDeepPolyAuxBound( aux ) );
         }
     }
 }

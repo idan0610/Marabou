@@ -2281,9 +2281,6 @@ void Layer::produceExplanationForBound( unsigned variable,
 
     _layerOwner->updateLbExplanationForVariable( variable, lbExplanation );
     _layerOwner->updateUbExplanationForVariable( variable, ubExplanation );
-
-    lbExplanation.dump();
-    ubExplanation.dump();
 }
 
 } // namespace NLR
