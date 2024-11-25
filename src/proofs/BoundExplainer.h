@@ -33,6 +33,7 @@ public:
     ~BoundExplainer();
 
     BoundExplainer &operator=( const BoundExplainer &other );
+
     /*
       Returns the number of rows
      */

@@ -3748,8 +3748,10 @@ void Engine::markLeafToDelegate()
 const Vector<double> Engine::computeContradiction( unsigned infeasibleVar ) const
 {
     ASSERT( _produceUNSATProofs );
-    // TODO use bound explainer numberofrows
-    unsigned m = _tableau->getM() + _plConstraints.size();
+
+    unsigned m = _boundManager.getNumOfBoundExplainerRows();
+    ASSERT( m == _tableau->getM() + _plConstraints.size() );
+
     SparseUnsortedList upperBoundExplanation( 0 );
     SparseUnsortedList lowerBoundExplanation( 0 );
 

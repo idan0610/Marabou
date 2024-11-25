@@ -216,6 +216,11 @@ public:
     */
     bool shouldProduceProofs() const;
 
+    /*
+      Get number of boundExplainer rows
+    */
+    unsigned getNumOfBoundExplainerRows() const;
+
 private:
     CVC4::context::Context &_context;
     unsigned _size;

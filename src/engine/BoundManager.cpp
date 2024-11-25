@@ -575,3 +575,8 @@ bool BoundManager::shouldProduceProofs() const
 {
     return _boundExplainer != nullptr;
 }
+
+unsigned BoundManager::getNumOfBoundExplainerRows() const
+{
+    return _boundExplainer->getNumberOfRows();
+}

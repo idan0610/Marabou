@@ -172,6 +172,11 @@ public:
       Return true iff boundManager should produce proofs
     */
     virtual bool shouldProduceProofs() const = 0;
+
+    /*
+      Get number of boundExplainer rows
+    */
+    virtual unsigned getNumOfBoundExplainerRows() const = 0;
 };
 
 #endif // __IBoundManager_h__
