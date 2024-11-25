@@ -838,15 +838,15 @@ NetworkLevelReasoner::getUbExplanationForVariable( unsigned int variable ) const
 }
 
 void NetworkLevelReasoner::updateLbExplanationForVariable( unsigned int variable,
-                                                           const SparseUnsortedList &proof )
+                                                           const SparseUnsortedList &explanation )
 {
-    _lbExplanations[variable] = proof;
+    _lbExplanations[variable] = explanation;
 }
 
 void NetworkLevelReasoner::updateUbExplanationForVariable( unsigned int variable,
-                                                           const SparseUnsortedList &proof )
+                                                           const SparseUnsortedList &explanation )
 {
-    _ubExplanations[variable] = proof;
+    _ubExplanations[variable] = explanation;
 }
 
 void NetworkLevelReasoner::clearLbExplanations()
@@ -861,7 +861,6 @@ void NetworkLevelReasoner::clearUbExplanations()
 
 void NetworkLevelReasoner::initializeMappingFromVariableToDeepPolyAux()
 {
-    std::cout << "init mapping" << std::endl;
     for ( const PiecewiseLinearConstraint *plc : _constraintsInTopologicalOrder )
         if ( plc->getType() == RELU )
         {
@@ -873,7 +872,7 @@ void NetworkLevelReasoner::initializeMappingFromVariableToDeepPolyAux()
 
 const List<unsigned int> *NetworkLevelReasoner::getDeepPolyAuxVars( unsigned int variable )
 {
-    if (_variableToDeepPolyAuxVars.exists( variable ))
+    if ( _variableToDeepPolyAuxVars.exists( variable ) )
         return &_variableToDeepPolyAuxVars[variable];
     else
         return nullptr;
@@ -888,5 +887,12 @@ void NetworkLevelReasoner::produceUNSATProofs()
 {
     _produceUNSATProofs = true;
 }
+
+void NetworkLevelReasoner::updateExplanationInExplainer( unsigned variable, bool isUpper )
+{
+    SparseUnsortedList expl = isUpper ? _ubExplanations[variable] : _lbExplanations[variable];
+    _tableau->getBoundManager().updateBoundExplanationSparse( expl, isUpper, variable );
+}
+
 
 } // namespace NLR

@@ -3430,7 +3430,7 @@ bool Engine::certifyInfeasibility( unsigned var ) const
                                                              _tableau->getSparseA(),
                                                              _groundBoundManager.getUpperBounds(),
                                                              _groundBoundManager.getLowerBounds(),
-                                                             _tableau->getN() );
+                                                             _boundManager.getNumberOfVariables() );
     return FloatUtils::isNegative( derivedBound );
 }
 
@@ -3453,7 +3453,7 @@ double Engine::explainBound( unsigned var, bool isUpper ) const
                                                 _tableau->getSparseA(),
                                                 _groundBoundManager.getUpperBounds(),
                                                 _groundBoundManager.getLowerBounds(),
-                                                _tableau->getN() );
+                                                _boundManager.getNumberOfVariables() );
 }
 
 bool Engine::validateBounds( unsigned var, double epsilon, bool isUpper ) const
@@ -3683,7 +3683,7 @@ bool Engine::certifyUNSATCertificate()
     {
         File file( JsonWriter::PROOF_FILENAME );
         JsonWriter::writeProofToJson( _UNSATCertificate,
-                                      _tableau->getM(),
+                                      _boundManager.getNumOfBoundExplainerRows(),
                                       _tableau->getSparseA(),
                                       groundUpperBounds,
                                       groundLowerBounds,
@@ -3692,7 +3692,7 @@ bool Engine::certifyUNSATCertificate()
     }
 
     Checker unsatCertificateChecker( _UNSATCertificate,
-                                     _tableau->getM(),
+                                     _boundManager.getNumOfBoundExplainerRows(),
                                      _tableau->getSparseA(),
                                      groundUpperBounds,
                                      groundLowerBounds,

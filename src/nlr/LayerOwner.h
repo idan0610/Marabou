@@ -41,8 +41,9 @@ public:
     virtual bool shouldProduceProofs() const = 0;
     virtual const SparseUnsortedList &getLbExplanationForVariable( unsigned variable ) const = 0;
     virtual const SparseUnsortedList &getUbExplanationForVariable( unsigned variable ) const = 0;
-    virtual void updateLbExplanationForVariable( unsigned variable, const SparseUnsortedList &proof ) = 0;
-    virtual void updateUbExplanationForVariable( unsigned variable, const SparseUnsortedList &proof ) = 0;
+    virtual void updateLbExplanationForVariable( unsigned variable, const SparseUnsortedList &explanation ) = 0;
+    virtual void updateUbExplanationForVariable( unsigned variable, const SparseUnsortedList &explanation ) = 0;
+    virtual void updateExplanationInExplainer( unsigned variable, bool isUpper) = 0;
 };
 
 } // namespace NLR

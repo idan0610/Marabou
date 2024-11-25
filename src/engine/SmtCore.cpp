@@ -154,7 +154,7 @@ void SmtCore::performSplit()
     {
         _statistics->incUnsignedAttribute( Statistics::NUM_SPLITS );
         _statistics->incUnsignedAttribute( Statistics::NUM_VISITED_TREE_STATES );
-//        printCurrentState();
+        //        printCurrentState();
     }
 
     // Before storing the state of the engine, we:
@@ -276,7 +276,7 @@ bool SmtCore::popSplit()
         // A pop always sends us to a state that we haven't seen before - whether
         // from a sibling split, or from a lower level of the tree.
         _statistics->incUnsignedAttribute( Statistics::NUM_VISITED_TREE_STATES );
-//        printCurrentState();
+        //        printCurrentState();
     }
 
     bool inconsistent = true;
@@ -564,7 +564,7 @@ void SmtCore::replaySmtStackEntry( SmtStackEntry *stackEntry )
     {
         _statistics->incUnsignedAttribute( Statistics::NUM_SPLITS );
         _statistics->incUnsignedAttribute( Statistics::NUM_VISITED_TREE_STATES );
-//        printCurrentState();
+        //        printCurrentState();
     }
 
     // Obtain the current state of the engine
@@ -612,32 +612,34 @@ bool SmtCore::pickSplitPLConstraint()
     return _constraintForSplitting != NULL;
 }
 
+//TODO delete
 void SmtCore::printCurrentState() const
 {
     std::cout << "State #"
-              << _statistics->getUnsignedAttribute( Statistics::NUM_VISITED_TREE_STATES ) <<
-        " Time " << _statistics->getTotalTimeInMicro() << " : ";
+              << _statistics->getUnsignedAttribute( Statistics::NUM_VISITED_TREE_STATES )
+              << " Time " << _statistics->getTotalTimeInMicro() << " : ";
     int i = 1;
-    for ( const auto *plc : _engine->getPiecewiseLinearConstraints()) {
-        if (plc->getType() == RELU || plc->getType() == LEAKY_RELU)
+    for ( const auto *plc : _engine->getPiecewiseLinearConstraints() )
+    {
+        if ( plc->getType() == RELU || plc->getType() == LEAKY_RELU )
         {
-            if (plc->getPhaseStatus() == RELU_PHASE_ACTIVE)
+            if ( plc->getPhaseStatus() == RELU_PHASE_ACTIVE )
                 std::cout << i << " ";
-            else if(plc->getPhaseStatus() == RELU_PHASE_INACTIVE)
+            else if ( plc->getPhaseStatus() == RELU_PHASE_INACTIVE )
                 std::cout << -i << " ";
         }
-        else if (plc->getType() == ABSOLUTE_VALUE)
+        else if ( plc->getType() == ABSOLUTE_VALUE )
         {
-            if (plc->getPhaseStatus() == ABS_PHASE_POSITIVE)
+            if ( plc->getPhaseStatus() == ABS_PHASE_POSITIVE )
                 std::cout << i << " ";
-            else if(plc->getPhaseStatus() == ABS_PHASE_NEGATIVE)
+            else if ( plc->getPhaseStatus() == ABS_PHASE_NEGATIVE )
                 std::cout << -i << " ";
         }
-        else if (plc->getType() == SIGN)
+        else if ( plc->getType() == SIGN )
         {
-            if (plc->getPhaseStatus() == SIGN_PHASE_POSITIVE)
+            if ( plc->getPhaseStatus() == SIGN_PHASE_POSITIVE )
                 std::cout << i << " ";
-            else if(plc->getPhaseStatus() == SIGN_PHASE_NEGATIVE)
+            else if ( plc->getPhaseStatus() == SIGN_PHASE_NEGATIVE )
                 std::cout << -i << " ";
         }
         ++i;

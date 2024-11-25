@@ -178,6 +178,8 @@ public:
                                      double symbolicUpperBias,
                                      unsigned int sourceLayerIndex );
 
+    void updatedVariableExplanation( bool isUpper, unsigned neuronIndex );
+
 private:
     unsigned _layerIndex;
     Type _type;

@@ -2248,6 +2248,8 @@ void Layer::produceExplanationForBound( unsigned variable,
 
     SparseUnsortedList lbExplanation;
     SparseUnsortedList ubExplanation;
+    lbExplanation.initializeToEmpty();
+    ubExplanation.initializeToEmpty();
     const Layer *sourceLayer = _layerOwner->getLayer( sourceLayerIndex );
 
     for ( unsigned i = 0; i < sourceLayer->getSize(); ++i )
@@ -2255,9 +2257,15 @@ void Layer::produceExplanationForBound( unsigned variable,
         if ( !sourceLayer->_neuronToVariable.exists( i ) )
             continue; // TODO: Think about what should happen here
         if ( !FloatUtils::isZero( symbolicLB[i] ) )
+        {
             lbExplanation.append( sourceLayer->neuronToVariable( i ), symbolicLB[i] );
+            lbExplanation.incrementSize();
+        }
         if ( !FloatUtils::isZero( symbolicUB[i] ) )
+        {
             ubExplanation.append( sourceLayer->neuronToVariable( i ), symbolicUB[i] );
+            ubExplanation.incrementSize();
+        }
 
         if ( sourceLayer->neuronEliminated( i ) )
             continue; // TODO: think about this
@@ -2273,14 +2281,25 @@ void Layer::produceExplanationForBound( unsigned variable,
             unsigned deepPolyAuxVar = deepPolyAuxVars->front();
 
             if ( !FloatUtils::isZero( symbolicUpperBias ) )
+            {
                 ubExplanation.append( deepPolyAuxVar, symbolicUB[i] );
+                ubExplanation.incrementSize();
+            }
             if ( !FloatUtils::isZero( symbolicLowerBias ) )
-                ubExplanation.append( deepPolyAuxVar, symbolicLB[i] );
+            {
+                lbExplanation.append( deepPolyAuxVar, symbolicLB[i] );
+                lbExplanation.incrementSize();
+            }
         }
     }
-
     _layerOwner->updateLbExplanationForVariable( variable, lbExplanation );
     _layerOwner->updateUbExplanationForVariable( variable, ubExplanation );
 }
+
+void Layer::updatedVariableExplanation( bool isUpper, unsigned neuronIndex )
+{
+    _layerOwner->updateExplanationInExplainer( isUpper, neuronToVariable( neuronIndex ) );
+}
+
 
 } // namespace NLR

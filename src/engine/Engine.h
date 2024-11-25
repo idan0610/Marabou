@@ -22,6 +22,7 @@
 #include "AutoTableau.h"
 #include "BlandsRule.h"
 #include "BoundManager.h"
+#include "CSRMatrix.h"
 #include "Checker.h"
 #include "DantzigsRule.h"
 #include "DegradationChecker.h"
@@ -539,7 +540,6 @@ private:
     LinearExpression _heuristicCost;
 
     List<SparseUnsortedList> _deepPolyFictiveRows;
-    Map<unsigned, double> _deepPolyAuxBounds;
 
     /*
       Perform a simplex step: compute the cost function, pick the
@@ -901,6 +901,9 @@ private:
     */
     void writeContradictionToCertificate( unsigned infeasibleVar ) const;
 
+    /*
+     Collect fictive rows used for DeepPoly, computed with updated bounds
+    */
     void collectDeepPolySymbolicConstraintsAndBounds();
 };
 

@@ -185,6 +185,7 @@ public:
     */
     virtual void propagateBoundManagerTightenings() = 0;
 
+    // TODO delete
     virtual const List<PiecewiseLinearConstraint *> &getPiecewiseLinearConstraints() const = 0;
 };
 
