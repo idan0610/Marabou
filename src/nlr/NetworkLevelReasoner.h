@@ -197,6 +197,28 @@ public:
 
     bool isBoundsAfterSplitInitialized() const override;
 
+    const SparseUnsortedList &getLbExplanationForVariable( unsigned variable ) const override;
+
+    const SparseUnsortedList &getUbExplanationForVariable( unsigned variable ) const override;
+
+    void updateLbExplanationForVariable( unsigned variable,
+                                         const SparseUnsortedList &proof ) override;
+
+    void updateUbExplanationForVariable( unsigned variable,
+                                         const SparseUnsortedList &proof ) override;
+
+    void clearLbExplanations();
+
+    void clearUbExplanations();
+
+    void initializeMappingFromVariableToDeepPolyAux();
+
+    const List<unsigned int> *getDeepPolyAuxVars( unsigned variable ) override;
+
+    bool shouldProduceProofs() const override;
+
+    void produceUNSATProofs();
+
 private:
     Map<unsigned, Layer *> _layerIndexToLayer;
     const ITableau *_tableau;
@@ -208,6 +230,13 @@ private:
     std::unique_ptr<DeepPolyAnalysis> _deepPolyAnalysis;
 
     bool _boundsAfterSplitInitialized;
+
+    bool _produceUNSATProofs;
+
+    Map<unsigned, SparseUnsortedList> _lbExplanations;
+    Map<unsigned, SparseUnsortedList> _ubExplanations;
+
+    Map<unsigned, List<unsigned>> _variableToDeepPolyAuxVars;
 
     void freeMemoryIfNeeded();
 

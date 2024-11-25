@@ -42,6 +42,10 @@ NetworkLevelReasoner::NetworkLevelReasoner()
     : _tableau( NULL )
     , _deepPolyAnalysis( nullptr )
     , _boundsAfterSplitInitialized( false )
+    , _produceUNSATProofs( false )
+    , _lbExplanations()
+    , _ubExplanations()
+    , _variableToDeepPolyAuxVars()
 {
 }
 
@@ -327,7 +331,7 @@ void NetworkLevelReasoner::obtainCurrentBounds()
 void NetworkLevelReasoner::obtainCurrentBoundsAfterSplit()
 {
     ASSERT( _tableau );
-    for (const auto &layer : _layerIndexToLayer)
+    for ( const auto &layer : _layerIndexToLayer )
         layer.second->obtainCurrentBoundsAfterSplit();
 
     _boundsAfterSplitInitialized = true;
@@ -817,6 +821,72 @@ const Map<unsigned, Layer *> &NetworkLevelReasoner::getLayerIndexToLayer() const
 bool NetworkLevelReasoner::isBoundsAfterSplitInitialized() const
 {
     return _boundsAfterSplitInitialized;
+}
+
+const SparseUnsortedList &
+NetworkLevelReasoner::getLbExplanationForVariable( unsigned int variable ) const
+{
+    ASSERT( _lbExplanations.exists( variable ) );
+    return _lbExplanations[variable];
+}
+
+const SparseUnsortedList &
+NetworkLevelReasoner::getUbExplanationForVariable( unsigned int variable ) const
+{
+    ASSERT( _ubExplanations.exists( variable ) );
+    return _ubExplanations[variable];
+}
+
+void NetworkLevelReasoner::updateLbExplanationForVariable( unsigned int variable,
+                                                           const SparseUnsortedList &proof )
+{
+    _lbExplanations[variable] = proof;
+}
+
+void NetworkLevelReasoner::updateUbExplanationForVariable( unsigned int variable,
+                                                           const SparseUnsortedList &proof )
+{
+    _ubExplanations[variable] = proof;
+}
+
+void NetworkLevelReasoner::clearLbExplanations()
+{
+    _lbExplanations.clear();
+}
+
+void NetworkLevelReasoner::clearUbExplanations()
+{
+    _ubExplanations.clear();
+}
+
+void NetworkLevelReasoner::initializeMappingFromVariableToDeepPolyAux()
+{
+    std::cout << "init mapping" << std::endl;
+    for ( const PiecewiseLinearConstraint *plc : _constraintsInTopologicalOrder )
+        if ( plc->getType() == RELU )
+        {
+            ReluConstraint *relu = (ReluConstraint *)plc;
+            _variableToDeepPolyAuxVars[relu->getF()] = relu->getDeepPolyAuxVars();
+        }
+    // TODO: implement for other PLCs
+}
+
+const List<unsigned int> *NetworkLevelReasoner::getDeepPolyAuxVars( unsigned int variable )
+{
+    if (_variableToDeepPolyAuxVars.exists( variable ))
+        return &_variableToDeepPolyAuxVars[variable];
+    else
+        return nullptr;
+}
+
+bool NetworkLevelReasoner::shouldProduceProofs() const
+{
+    return _produceUNSATProofs;
+}
+
+void NetworkLevelReasoner::produceUNSATProofs()
+{
+    _produceUNSATProofs = true;
 }
 
 } // namespace NLR

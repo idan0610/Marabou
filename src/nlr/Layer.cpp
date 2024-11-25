@@ -2236,4 +2236,54 @@ bool Layer::isBoundsAfterSplitInitialized() const
     return _layerOwner->isBoundsAfterSplitInitialized();
 }
 
+void Layer::produceExplanationForBound( unsigned variable,
+                                        const double *symbolicLB,
+                                        const double *symbolicUB,
+                                        double symbolicLowerBias,
+                                        double symbolicUpperBias,
+                                        unsigned int sourceLayerIndex )
+{
+    if ( !_layerOwner->shouldProduceProofs() )
+        return;
+
+    SparseUnsortedList lbExplanation;
+    SparseUnsortedList ubExplanation;
+    const Layer *sourceLayer = _layerOwner->getLayer( sourceLayerIndex );
+
+    for ( unsigned i = 0; i < sourceLayer->getSize(); ++i )
+    {
+        if ( !sourceLayer->_neuronToVariable.exists( i ) )
+            continue; // TODO: Think about what should happen here
+        if ( !FloatUtils::isZero( symbolicLB[i] ) )
+            lbExplanation.append( sourceLayer->neuronToVariable( i ), symbolicLB[i] );
+        if ( !FloatUtils::isZero( symbolicUB[i] ) )
+            ubExplanation.append( sourceLayer->neuronToVariable( i ), symbolicUB[i] );
+
+        if ( sourceLayer->neuronEliminated( i ) )
+            continue; // TODO: think about this
+
+        const List<unsigned> *deepPolyAuxVars =
+            _layerOwner->getDeepPolyAuxVars( sourceLayer->neuronToVariable( i ) );
+
+        if ( !deepPolyAuxVars )
+            continue;
+
+        if ( sourceLayer->getLayerType() == RELU )
+        {
+            unsigned deepPolyAuxVar = deepPolyAuxVars->front();
+
+            if ( !FloatUtils::isZero( symbolicUpperBias ) )
+                ubExplanation.append( deepPolyAuxVar, symbolicUB[i] );
+            if ( !FloatUtils::isZero( symbolicLowerBias ) )
+                ubExplanation.append( deepPolyAuxVar, symbolicLB[i] );
+        }
+    }
+
+    _layerOwner->updateLbExplanationForVariable( variable, lbExplanation );
+    _layerOwner->updateUbExplanationForVariable( variable, ubExplanation );
+
+    lbExplanation.dump();
+    ubExplanation.dump();
+}
+
 } // namespace NLR

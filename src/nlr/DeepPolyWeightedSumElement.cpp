@@ -370,6 +370,15 @@ void DeepPolyWeightedSumElement::concretizeSymbolicBoundForSourceLayer(
         if ( symbolicUpperBias )
             _workUb[i] += symbolicUpperBias[i];
     }
+
+    if ( sourceElement->getLayerType() != Layer::INPUT )
+        for ( unsigned i = 0; i < _size; ++i )
+            _layer->produceExplanationForBound( _layer->neuronToVariable( i ),
+                                                symbolicLb + _size * i,
+                                                symbolicUb + _size * i,
+                                                symbolicLowerBias[i],
+                                                symbolicUpperBias[i],
+                                                sourceElement->getLayerIndex() );
 }
 
 

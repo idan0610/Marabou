@@ -36,6 +36,13 @@ public:
     virtual unsigned getNumberOfLayers() const = 0;
     virtual void receiveTighterBound( Tightening tightening ) = 0;
     virtual bool isBoundsAfterSplitInitialized() const = 0;
+    virtual const List<unsigned int> *getDeepPolyAuxVars( unsigned variable ) = 0;
+
+    virtual bool shouldProduceProofs() const = 0;
+    virtual const SparseUnsortedList &getLbExplanationForVariable( unsigned variable ) const = 0;
+    virtual const SparseUnsortedList &getUbExplanationForVariable( unsigned variable ) const = 0;
+    virtual void updateLbExplanationForVariable( unsigned variable, const SparseUnsortedList &proof ) = 0;
+    virtual void updateUbExplanationForVariable( unsigned variable, const SparseUnsortedList &proof ) = 0;
 };
 
 } // namespace NLR

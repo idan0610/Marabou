@@ -192,6 +192,12 @@ bool Engine::solve( double timeoutInSeconds )
     SignalHandler::getInstance()->initialize();
     SignalHandler::getInstance()->registerClient( this );
 
+    if ( _produceUNSATProofs )
+    {
+        _networkLevelReasoner->produceUNSATProofs();
+        _networkLevelReasoner->initializeMappingFromVariableToDeepPolyAux();
+    }
+
     // Register the boundManager with all the PL constraints
     for ( auto &plConstraint : _plConstraints )
         plConstraint->registerBoundManager( &_boundManager );
@@ -276,7 +282,7 @@ bool Engine::solve( double timeoutInSeconds )
                      0 )
                 _statistics.print();
 
-            if ( splitJustPerformed )
+            if ( splitJustPerformed && _produceUNSATProofs )
                 _networkLevelReasoner->obtainCurrentBoundsAfterSplit();
 
             if ( _lpSolverType == LPSolverType::NATIVE )
@@ -2450,7 +2456,7 @@ void Engine::performSimulation()
 unsigned Engine::performSymbolicBoundTightening( InputQuery *inputQuery )
 {
     if ( _symbolicBoundTighteningType == SymbolicBoundTighteningType::NONE ||
-         ( !_networkLevelReasoner ) || _produceUNSATProofs )
+         ( !_networkLevelReasoner ) )
         return 0;
 
     struct timespec start = TimeUtils::sampleMicro();
@@ -2520,6 +2526,12 @@ unsigned Engine::performSymbolicBoundTightening( InputQuery *inputQuery )
                 ++numTightenedBounds;
             }
         }
+    }
+
+    if ( _produceUNSATProofs )
+    {
+        _networkLevelReasoner->clearLbExplanations();
+        _networkLevelReasoner->clearUbExplanations();
     }
 
     struct timespec end = TimeUtils::sampleMicro();

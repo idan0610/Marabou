@@ -171,6 +171,13 @@ public:
 
     bool isBoundsAfterSplitInitialized() const;
 
+    void produceExplanationForBound( unsigned variable,
+                                     const double *symbolicLB,
+                                     const double *symbolicUB,
+                                     double symbolicLowerBias,
+                                     double symbolicUpperBias,
+                                     unsigned int sourceLayerIndex );
+
 private:
     unsigned _layerIndex;
     Type _type;
