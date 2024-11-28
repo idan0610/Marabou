@@ -890,7 +890,7 @@ void NetworkLevelReasoner::produceUNSATProofs()
 
 void NetworkLevelReasoner::updateExplanationInExplainer( unsigned variable, bool isUpper )
 {
-    SparseUnsortedList expl = isUpper ? _ubExplanations[variable] : _lbExplanations[variable];
+    SparseUnsortedList &expl = isUpper ? _ubExplanations[variable] : _lbExplanations[variable];
     _tableau->getBoundManager().updateBoundExplanationSparse( expl, isUpper, variable );
 }
 

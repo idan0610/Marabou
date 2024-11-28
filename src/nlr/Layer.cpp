@@ -2292,8 +2292,10 @@ void Layer::produceExplanationForBound( unsigned variable,
             }
         }
     }
-    _layerOwner->updateLbExplanationForVariable( variable, lbExplanation );
-    _layerOwner->updateUbExplanationForVariable( variable, ubExplanation );
+    if ( !lbExplanation.empty() )
+        _layerOwner->updateLbExplanationForVariable( variable, lbExplanation );
+    if ( !ubExplanation.empty() )
+        _layerOwner->updateUbExplanationForVariable( variable, ubExplanation );
 }
 
 void Layer::updatedVariableExplanation( bool isUpper, unsigned neuronIndex )
