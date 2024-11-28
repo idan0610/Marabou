@@ -2256,11 +2256,13 @@ void Layer::produceExplanationForBound( unsigned variable,
     {
         if ( !sourceLayer->_neuronToVariable.exists( i ) )
             continue; // TODO: Think about what should happen here
+
         if ( !FloatUtils::isZero( symbolicLB[i] ) )
         {
             lbExplanation.append( sourceLayer->neuronToVariable( i ), symbolicLB[i] );
             lbExplanation.incrementSize();
         }
+
         if ( !FloatUtils::isZero( symbolicUB[i] ) )
         {
             ubExplanation.append( sourceLayer->neuronToVariable( i ), symbolicUB[i] );
@@ -2292,10 +2294,22 @@ void Layer::produceExplanationForBound( unsigned variable,
             }
         }
     }
+
     if ( !lbExplanation.empty() )
+    {
+        // Add coefficient for the explained var
+        lbExplanation.append( variable, -1 );
+        lbExplanation.incrementSize();
         _layerOwner->updateLbExplanationForVariable( variable, lbExplanation );
+    }
+
     if ( !ubExplanation.empty() )
+    {
+        // Add coefficient for the explained var
+        ubExplanation.append( variable, -1 );
+        ubExplanation.incrementSize();
         _layerOwner->updateUbExplanationForVariable( variable, ubExplanation );
+    }
 }
 
 void Layer::updatedVariableExplanation( bool isUpper, unsigned neuronIndex )

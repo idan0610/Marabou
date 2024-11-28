@@ -219,6 +219,11 @@ public:
 
     void produceUNSATProofs();
 
+    /*
+      Update explanation in boundExplainer using sparseRow stored in the NLR
+    */
+    void updateExplanationInExplainer( unsigned int variable, bool isUpper ) override;
+
 private:
     Map<unsigned, Layer *> _layerIndexToLayer;
     const ITableau *_tableau;
@@ -276,11 +281,6 @@ private:
       to all neurons in the network
     */
     void reindexNeurons();
-
-    /*
-      Update explanation in boundExplainer using sparseRow stored in the NLR
-     */
-    void updateExplanationInExplainer( unsigned int variable, bool isUpper ) override;
 };
 
 } // namespace NLR

@@ -2519,6 +2519,9 @@ unsigned Engine::performSymbolicBoundTightening( InputQuery *inputQuery )
                  FloatUtils::gt( tightening._value,
                                  _tableau->getLowerBound( tightening._variable ) ) )
             {
+                if ( _produceUNSATProofs )
+                    _networkLevelReasoner->updateExplanationInExplainer( tightening._variable,
+                                                                         false );
                 _tableau->tightenLowerBound( tightening._variable, tightening._value );
                 ++numTightenedBounds;
             }
@@ -2527,6 +2530,9 @@ unsigned Engine::performSymbolicBoundTightening( InputQuery *inputQuery )
                  FloatUtils::lt( tightening._value,
                                  _tableau->getUpperBound( tightening._variable ) ) )
             {
+                if ( _produceUNSATProofs )
+                    _networkLevelReasoner->updateExplanationInExplainer( tightening._variable,
+                                                                         true );
                 _tableau->tightenUpperBound( tightening._variable, tightening._value );
                 ++numTightenedBounds;
             }

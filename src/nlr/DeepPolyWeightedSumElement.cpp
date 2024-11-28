@@ -261,15 +261,9 @@ void DeepPolyWeightedSumElement::concretizeSymbolicBound(
     for ( unsigned i = 0; i < _size; ++i )
     {
         if ( _lb[i] < _workLb[i] )
-        {
             _lb[i] = _workLb[i];
-            _layer->updatedVariableExplanation( false, i );
-        }
         if ( _ub[i] > _workUb[i] )
-        {
             _ub[i] = _workUb[i];
-            _layer->updatedVariableExplanation( true, i );
-        }
         log( Stringf( "Neuron%u working LB: %f, UB: %f", i, _workLb[i], _workUb[i] ) );
         log( Stringf( "Neuron%u LB: %f, UB: %f", i, _lb[i], _ub[i] ) );
     }
