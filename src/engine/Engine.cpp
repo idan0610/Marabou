@@ -69,6 +69,7 @@ Engine::Engine()
     , _milpSolverBoundTighteningType( Options::get()->getMILPSolverBoundTighteningType() )
     , _sncMode( false )
     , _queryId( "" )
+    , _sparseTableauWithDeepPolyRows()
     , _produceUNSATProofs( Options::get()->getBool( Options::PRODUCE_PROOFS ) )
     , _groundBoundManager( _context )
     , _UNSATCertificate( NULL )
@@ -203,6 +204,7 @@ bool Engine::solve( double timeoutInSeconds )
     {
         _networkLevelReasoner->produceUNSATProofs();
         _networkLevelReasoner->initializeMappingFromVariableToDeepPolyAux();
+        _tableau->getSparseA()->storeIntoOther( &_sparseTableauWithDeepPolyRows );
         collectDeepPolySymbolicConstraintsAndBounds();
     }
 
@@ -3869,5 +3871,14 @@ void Engine::collectDeepPolySymbolicConstraintsAndBounds()
             _groundBoundManager.setLowerBound( aux, plc->getDeepPolyAuxBound( aux ) );
             _groundBoundManager.setUpperBound( aux, plc->getDeepPolyAuxBound( aux ) );
         }
+    }
+
+    Vector<double> rowVec = Vector<double>( _boundManager.getNumberOfVariables(), 0 );
+    for ( const auto &row : _deepPolyFictiveRows )
+    {
+        for ( const auto &entry : row )
+            rowVec[entry._index] = entry._value;
+        _sparseTableauWithDeepPolyRows.addLastRow( rowVec.data() );
+        rowVec = Vector<double>( _boundManager.getNumberOfVariables(), 0 );
     }
 }

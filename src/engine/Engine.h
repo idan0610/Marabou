@@ -540,6 +540,7 @@ private:
     LinearExpression _heuristicCost;
 
     List<SparseUnsortedList> _deepPolyFictiveRows;
+    CSRMatrix _sparseTableauWithDeepPolyRows;
 
     /*
       Perform a simplex step: compute the cost function, pick the
