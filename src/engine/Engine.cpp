@@ -317,6 +317,8 @@ bool Engine::solve( double timeoutInSeconds )
             if ( _smtCore.needToSplit() )
             {
                 _smtCore.performSplit();
+                _tableau->getSparseA()->storeIntoOther( &_sparseTableauWithDeepPolyRows );
+                collectDeepPolySymbolicConstraintsAndBounds();
                 splitJustPerformed = true;
                 continue;
             }
@@ -2144,8 +2146,6 @@ void Engine::applySplit( const PiecewiseLinearCaseSplit &split )
         }
     }
 
-    collectDeepPolySymbolicConstraintsAndBounds();
-
     if ( _produceUNSATProofs && _UNSATCertificateCurrentPointer )
         ( **_UNSATCertificateCurrentPointer ).setVisited();
 
@@ -3383,7 +3383,7 @@ void Engine::explainSimplexFailure()
     ASSERT( _produceUNSATProofs );
 
     DEBUG( checkGroundBounds() );
-    validateAllBounds(0.0001);
+    validateAllBounds( 0.0001 );
     unsigned infeasibleVar = _boundManager.getInconsistentVariable();
 
     if ( infeasibleVar == IBoundManager::NO_VARIABLE_FOUND ||
