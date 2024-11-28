@@ -1518,11 +1518,13 @@ bool Engine::processInputQuery( InputQuery &inputQuery, bool preprocess )
             constraintMatrix = createConstraintMatrix();
 
             unsigned n = _preprocessedQuery->getNumberOfVariables();
-            _boundManager.initialize( n + _plConstraints.size() );
+            _boundManager.initialize( n +
+                                      _preprocessedQuery->getPiecewiseLinearConstraints().size() );
 
             initializeTableau( constraintMatrix, initialBasis );
-            _boundManager.initializeBoundExplainer( n + _plConstraints.size(),
-                                                    _tableau->getM() + _plConstraints.size() );
+            _boundManager.initializeBoundExplainer(
+                n + _preprocessedQuery->getPiecewiseLinearConstraints().size(),
+                _tableau->getM() + _preprocessedQuery->getPiecewiseLinearConstraints().size() );
             delete[] constraintMatrix;
 
             if ( _produceUNSATProofs )
@@ -1530,7 +1532,8 @@ bool Engine::processInputQuery( InputQuery &inputQuery, bool preprocess )
                 _UNSATCertificate = new UnsatCertificateNode( NULL, PiecewiseLinearCaseSplit() );
                 _UNSATCertificateCurrentPointer->set( _UNSATCertificate );
                 _UNSATCertificate->setVisited();
-                _groundBoundManager.initialize( n + _plConstraints.size() );
+                _groundBoundManager.initialize(
+                    n + _preprocessedQuery->getPiecewiseLinearConstraints().size() );
 
                 for ( unsigned i = 0; i < n; ++i )
                 {
@@ -3380,7 +3383,7 @@ void Engine::explainSimplexFailure()
     ASSERT( _produceUNSATProofs );
 
     DEBUG( checkGroundBounds() );
-
+    validateAllBounds(0.0001);
     unsigned infeasibleVar = _boundManager.getInconsistentVariable();
 
     if ( infeasibleVar == IBoundManager::NO_VARIABLE_FOUND ||
@@ -3435,7 +3438,7 @@ bool Engine::certifyInfeasibility( unsigned var ) const
 
     double derivedBound =
         UNSATCertificateUtils::computeCombinationUpperBound( sparseContradiction,
-                                                             _tableau->getSparseA(),
+                                                             &_sparseTableauWithDeepPolyRows,
                                                              _groundBoundManager.getUpperBounds(),
                                                              _groundBoundManager.getLowerBounds(),
                                                              _boundManager.getNumberOfVariables() );
@@ -3458,7 +3461,7 @@ double Engine::explainBound( unsigned var, bool isUpper ) const
     return UNSATCertificateUtils::computeBound( var,
                                                 isUpper,
                                                 explanation,
-                                                _tableau->getSparseA(),
+                                                &_sparseTableauWithDeepPolyRows,
                                                 _groundBoundManager.getUpperBounds(),
                                                 _groundBoundManager.getLowerBounds(),
                                                 _boundManager.getNumberOfVariables() );
@@ -3692,7 +3695,7 @@ bool Engine::certifyUNSATCertificate()
         File file( JsonWriter::PROOF_FILENAME );
         JsonWriter::writeProofToJson( _UNSATCertificate,
                                       _boundManager.getNumOfBoundExplainerRows(),
-                                      _tableau->getSparseA(),
+                                      &_sparseTableauWithDeepPolyRows,
                                       groundUpperBounds,
                                       groundLowerBounds,
                                       _plConstraints,
@@ -3701,7 +3704,7 @@ bool Engine::certifyUNSATCertificate()
 
     Checker unsatCertificateChecker( _UNSATCertificate,
                                      _boundManager.getNumOfBoundExplainerRows(),
-                                     _tableau->getSparseA(),
+                                     &_sparseTableauWithDeepPolyRows,
                                      groundUpperBounds,
                                      groundLowerBounds,
                                      _plConstraints );
@@ -3877,7 +3880,9 @@ void Engine::collectDeepPolySymbolicConstraintsAndBounds()
     for ( const auto &row : _deepPolyFictiveRows )
     {
         for ( const auto &entry : row )
+        {
             rowVec[entry._index] = entry._value;
+        }
         _sparseTableauWithDeepPolyRows.addLastRow( rowVec.data() );
         rowVec = Vector<double>( _boundManager.getNumberOfVariables(), 0 );
     }
