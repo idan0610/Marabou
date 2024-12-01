@@ -204,7 +204,6 @@ bool Engine::solve( double timeoutInSeconds )
     {
         _networkLevelReasoner->produceUNSATProofs();
         _networkLevelReasoner->initializeMappingFromVariableToDeepPolyAux();
-        _tableau->getSparseA()->storeIntoOther( &_sparseTableauWithDeepPolyRows );
         collectDeepPolySymbolicConstraintsAndBounds();
     }
 
@@ -317,7 +316,6 @@ bool Engine::solve( double timeoutInSeconds )
             if ( _smtCore.needToSplit() )
             {
                 _smtCore.performSplit();
-                _tableau->getSparseA()->storeIntoOther( &_sparseTableauWithDeepPolyRows );
                 collectDeepPolySymbolicConstraintsAndBounds();
                 splitJustPerformed = true;
                 continue;
@@ -3354,21 +3352,21 @@ InputQuery Engine::buildQueryFromCurrentState() const
 
 void Engine::updateGroundUpperBound( const unsigned var, const double value )
 {
-    ASSERT( var < _tableau->getN() && _produceUNSATProofs );
+    ASSERT( var < _groundBoundManager.getNumberOfVariables() && _produceUNSATProofs );
     if ( FloatUtils::lt( value, _groundBoundManager.getUpperBound( var ) ) )
         _groundBoundManager.setUpperBound( var, value );
 }
 
 void Engine::updateGroundLowerBound( const unsigned var, const double value )
 {
-    ASSERT( var < _tableau->getN() && _produceUNSATProofs );
+    ASSERT( var < _groundBoundManager.getNumberOfVariables() && _produceUNSATProofs );
     if ( FloatUtils::gt( value, _groundBoundManager.getLowerBound( var ) ) )
         _groundBoundManager.setLowerBound( var, value );
 }
 
 double Engine::getGroundBound( unsigned var, bool isUpper ) const
 {
-    ASSERT( var < _tableau->getN() && _produceUNSATProofs );
+    ASSERT( var < _groundBoundManager.getNumberOfVariables() && _produceUNSATProofs );
     return isUpper ? _groundBoundManager.getUpperBound( var )
                    : _groundBoundManager.getLowerBound( var );
 }
@@ -3864,6 +3862,14 @@ const List<PiecewiseLinearConstraint *> &Engine::getPiecewiseLinearConstraints()
 
 void Engine::collectDeepPolySymbolicConstraintsAndBounds()
 {
+    bool firstUsed = false;
+
+    if ( _sparseTableauWithDeepPolyRows.getNnz() == 0 )
+    {
+        _tableau->getSparseA()->storeIntoOther( &_sparseTableauWithDeepPolyRows );
+        firstUsed = true;
+    }
+
     _deepPolyFictiveRows.clear();
 
     for ( const PiecewiseLinearConstraint *plc : _plConstraints )
@@ -3876,14 +3882,35 @@ void Engine::collectDeepPolySymbolicConstraintsAndBounds()
         }
     }
 
-    Vector<double> rowVec = Vector<double>( _boundManager.getNumberOfVariables(), 0 );
-    for ( const auto &row : _deepPolyFictiveRows )
+    if ( firstUsed )
     {
-        for ( const auto &entry : row )
+        Vector<double> rowVec = Vector<double>( _boundManager.getNumberOfVariables(), 0 );
+        for ( const auto &row : _deepPolyFictiveRows )
         {
-            rowVec[entry._index] = entry._value;
+            for ( const auto &entry : row )
+            {
+                rowVec[entry._index] = entry._value;
+            }
+            _sparseTableauWithDeepPolyRows.addLastRow( rowVec.data() );
+            rowVec = Vector<double>( _boundManager.getNumberOfVariables(), 0 );
         }
-        _sparseTableauWithDeepPolyRows.addLastRow( rowVec.data() );
-        rowVec = Vector<double>( _boundManager.getNumberOfVariables(), 0 );
+    }
+    else
+    {
+        unsigned idx = 0;
+        for ( const auto *plc : _plConstraints )
+        {
+            if ( plc->getType() == RELU )
+            {
+                const auto *relu = (const ReluConstraint *)plc;
+                const auto &fictiveRow = relu->getDeepPolyFictiveRow();
+                double value = fictiveRow.get( relu->getB() );
+                _sparseTableauWithDeepPolyRows.commitChange(
+                    _tableau->getM() + idx, relu->getB(), value );
+            }
+
+            ++idx;
+        }
+        _sparseTableauWithDeepPolyRows.executeChanges();
     }
 }

@@ -42,6 +42,14 @@ void PrecisionRestorer::restorePrecision( IEngine &engine,
     // before restoring it
     unsigned targetM = tableau.getM();
     unsigned targetN = tableau.getN();
+    unsigned numOfPLConstraints = engine.getPiecewiseLinearConstraints().size();
+
+    if ( engine.shouldProduceProofs() )
+    {
+        targetN += numOfPLConstraints;
+        targetM += numOfPLConstraints;
+    }
+
 
     Set<unsigned> shouldBeBasic = tableau.getBasicVariables();
 
@@ -95,7 +103,14 @@ void PrecisionRestorer::restorePrecision( IEngine &engine,
     // is added. If we fail to restore the dimensions, we cannot restore the
     // basics.
 
-    bool dimensionsRestored = ( tableau.getN() == targetN ) && ( tableau.getM() == targetM );
+    bool dimensionsRestored;
+
+    if ( !engine.shouldProduceProofs() )
+        dimensionsRestored = ( tableau.getN() == targetN ) && ( tableau.getM() == targetM );
+    else
+        dimensionsRestored = ( tableau.getN() + numOfPLConstraints == targetN ) &&
+                             ( tableau.getM() + numOfPLConstraints == targetM );
+
 
     ASSERT( dimensionsRestored || GlobalConfiguration::USE_COLUMN_MERGING_EQUATIONS );
 
@@ -149,7 +164,7 @@ void PrecisionRestorer::restorePrecision( IEngine &engine,
         }
     }
 
-    for ( unsigned i = 0; i < targetN; ++i )
+    for ( unsigned i = 0; i < tableau.getN(); ++i )
     {
         tableau.tightenUpperBoundNaively( i, upperBoundsBackup[i] );
         tableau.tightenLowerBoundNaively( i, lowerBoundsBackup[i] );
@@ -167,8 +182,20 @@ void PrecisionRestorer::restorePrecision( IEngine &engine,
 
     DEBUG( {
         // Same dimensions
-        ASSERT( GlobalConfiguration::USE_COLUMN_MERGING_EQUATIONS || tableau.getN() == targetN );
-        ASSERT( GlobalConfiguration::USE_COLUMN_MERGING_EQUATIONS || tableau.getM() == targetM );
+        if ( !engine.shouldProduceProofs() )
+        {
+            ASSERT( GlobalConfiguration::USE_COLUMN_MERGING_EQUATIONS ||
+                    tableau.getN() == targetN );
+            ASSERT( GlobalConfiguration::USE_COLUMN_MERGING_EQUATIONS ||
+                    tableau.getM() == targetM );
+        }
+        else
+        {
+            ASSERT( GlobalConfiguration::USE_COLUMN_MERGING_EQUATIONS ||
+                    tableau.getN() + numOfPLConstraints == targetN );
+            ASSERT( GlobalConfiguration::USE_COLUMN_MERGING_EQUATIONS ||
+                    tableau.getM() + numOfPLConstraints == targetM );
+        }
 
         // Constraints should be in the same state before and after restoration
         for ( const auto &pair : targetEngineState._plConstraintToState )

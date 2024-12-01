@@ -241,6 +241,10 @@ public:
 
     const List<unsigned> getNativeAuxVars() const override;
 
+    SparseUnsortedList getDeepPolyFictiveRow() const override;
+
+    double getDeepPolyAuxBound(unsigned aux) const override;
+
 private:
     unsigned _b, _f;
     bool _auxVarInUse;
@@ -276,10 +280,6 @@ private:
      Assign a variable as an aux variable by the tableau, related to some existing aux variable.
     */
     void addTableauAuxVar( unsigned tableauAuxVar, unsigned constraintAuxVar ) override;
-
-    SparseUnsortedList getDeepPolyFictiveRow() const override;
-
-    double getDeepPolyAuxBound(unsigned aux) const override;
 };
 
 #endif // __ReluConstraint_h__
