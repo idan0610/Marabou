@@ -264,8 +264,12 @@ void DeepPolyWeightedSumElement::concretizeSymbolicBound(
             _lb[i] = _workLb[i];
         if ( _ub[i] > _workUb[i] )
             _ub[i] = _workUb[i];
-        log( Stringf( "Neuron%u working LB: %f, UB: %f", i, _workLb[i], _workUb[i] ) );
-        log( Stringf( "Neuron%u LB: %f, UB: %f", i, _lb[i], _ub[i] ) );
+        log( Stringf( "Neuron %u working LB: %f, UB: %f", i, _workLb[i], _workUb[i] ) );
+        log( Stringf( "Neuron %u LB: %f, UB: %f, variable: %u",
+                      i,
+                      _lb[i],
+                      _ub[i],
+                      _layer->neuronToVariable( i ) ) );
     }
 
     log( "Concretizing bound - done" );
@@ -372,13 +376,11 @@ void DeepPolyWeightedSumElement::concretizeSymbolicBoundForSourceLayer(
     }
 
     if ( sourceElement->getLayerType() != Layer::INPUT )
-        for ( unsigned i = 0; i < _size; ++i )
-            _layer->produceExplanationForBound( _layer->neuronToVariable( i ),
-                                                symbolicLb + _size * i,
-                                                symbolicUb + _size * i,
-                                                symbolicLowerBias[i],
-                                                symbolicUpperBias[i],
-                                                sourceElement->getLayerIndex() );
+        _layer->produceExplanationForBound( symbolicLb,
+                                            symbolicUb,
+                                            symbolicLowerBias,
+                                            symbolicUpperBias,
+                                            sourceElement->getLayerIndex() );
 }
 
 

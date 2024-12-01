@@ -171,11 +171,10 @@ public:
 
     bool isBoundsAfterSplitInitialized() const;
 
-    void produceExplanationForBound( unsigned variable,
-                                     const double *symbolicLB,
+    void produceExplanationForBound( const double *symbolicLB,
                                      const double *symbolicUB,
-                                     double symbolicLowerBias,
-                                     double symbolicUpperBias,
+                                     const double *symbolicLowerBias,
+                                     const double *symbolicUpperBias,
                                      unsigned int sourceLayerIndex );
 
     void updatedVariableExplanation( bool isUpper, unsigned neuronIndex );

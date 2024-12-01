@@ -2236,79 +2236,89 @@ bool Layer::isBoundsAfterSplitInitialized() const
     return _layerOwner->isBoundsAfterSplitInitialized();
 }
 
-void Layer::produceExplanationForBound( unsigned variable,
-                                        const double *symbolicLB,
+void Layer::produceExplanationForBound( const double *symbolicLB,
                                         const double *symbolicUB,
-                                        double symbolicLowerBias,
-                                        double symbolicUpperBias,
+                                        const double *symbolicLowerBias,
+                                        const double *symbolicUpperBias,
                                         unsigned int sourceLayerIndex )
 {
     if ( !_layerOwner->shouldProduceProofs() )
         return;
 
-    SparseUnsortedList lbExplanation;
-    SparseUnsortedList ubExplanation;
-    lbExplanation.initializeToEmpty();
-    ubExplanation.initializeToEmpty();
-    const Layer *sourceLayer = _layerOwner->getLayer( sourceLayerIndex );
-
-    for ( unsigned i = 0; i < sourceLayer->getSize(); ++i )
+    for ( unsigned j = 0; j < _size; ++j )
     {
-        if ( !sourceLayer->_neuronToVariable.exists( i ) )
-            continue; // TODO: Think about what should happen here
+        unsigned variable = _neuronToVariable[j];
+        SparseUnsortedList lbExplanation;
+        SparseUnsortedList ubExplanation;
+        lbExplanation.initializeToEmpty();
+        ubExplanation.initializeToEmpty();
+        const Layer *sourceLayer = _layerOwner->getLayer( sourceLayerIndex );
 
-        if ( !FloatUtils::isZero( symbolicLB[i] ) )
+        for ( unsigned i = 0; i < sourceLayer->getSize(); ++i )
         {
-            lbExplanation.append( sourceLayer->neuronToVariable( i ), symbolicLB[i] );
-            lbExplanation.incrementSize();
-        }
-
-        if ( !FloatUtils::isZero( symbolicUB[i] ) )
-        {
-            ubExplanation.append( sourceLayer->neuronToVariable( i ), symbolicUB[i] );
-            ubExplanation.incrementSize();
-        }
-
-        if ( sourceLayer->neuronEliminated( i ) )
-            continue; // TODO: think about this
-
-        const List<unsigned> *deepPolyAuxVars =
-            _layerOwner->getDeepPolyAuxVars( sourceLayer->neuronToVariable( i ) );
-
-        if ( !deepPolyAuxVars )
-            continue;
-
-        if ( sourceLayer->getLayerType() == RELU )
-        {
-            unsigned deepPolyAuxVar = deepPolyAuxVars->front();
-
-            if ( !FloatUtils::isZero( symbolicUpperBias ) )
+            if ( sourceLayer->neuronEliminated( i ) )
             {
-                ubExplanation.append( deepPolyAuxVar, symbolicUB[i] );
-                ubExplanation.incrementSize();
+                ASSERT( sourceLayer->_eliminatedNeurons[i] == 0 );
+                continue;
             }
-            if ( !FloatUtils::isZero( symbolicLowerBias ) )
+
+            ASSERT( sourceLayer->_neuronToVariable.exists( i ) );
+
+            double weight = symbolicLB[i * _size + j];
+            if ( !FloatUtils::isZero( weight ) )
             {
-                lbExplanation.append( deepPolyAuxVar, symbolicLB[i] );
+                lbExplanation.append( sourceLayer->neuronToVariable( i ), weight );
                 lbExplanation.incrementSize();
             }
+
+            weight = symbolicUB[i * _size + j];
+            if ( !FloatUtils::isZero( weight ) )
+            {
+                ubExplanation.append( sourceLayer->neuronToVariable( i ), weight );
+                ubExplanation.incrementSize();
+            }
+
+            const List<unsigned> *deepPolyAuxVars =
+                _layerOwner->getDeepPolyAuxVars( sourceLayer->neuronToVariable( i ) );
+
+            if ( !deepPolyAuxVars )
+                continue;
+
+            if ( sourceLayer->getLayerType() == RELU )
+            {
+                unsigned deepPolyAuxVar = deepPolyAuxVars->front();
+
+                weight = symbolicUB[i * _size + j];
+                if ( !FloatUtils::isZero( symbolicUpperBias[j] ) )
+                {
+                    ubExplanation.append( deepPolyAuxVar, weight );
+                    ubExplanation.incrementSize();
+                }
+
+                weight = symbolicLB[i * _size + j];
+                if ( !FloatUtils::isZero( symbolicLowerBias[j] ) )
+                {
+                    lbExplanation.append( deepPolyAuxVar, weight );
+                    lbExplanation.incrementSize();
+                }
+            }
         }
-    }
 
-    if ( !lbExplanation.empty() )
-    {
-        // Add coefficient for the explained var
-        lbExplanation.append( variable, -1 );
-        lbExplanation.incrementSize();
-        _layerOwner->updateLbExplanationForVariable( variable, lbExplanation );
-    }
+        if ( !lbExplanation.empty() )
+        {
+            // Add coefficient for the explained var
+            lbExplanation.append( variable, -1 );
+            lbExplanation.incrementSize();
+            _layerOwner->updateLbExplanationForVariable( variable, lbExplanation );
+        }
 
-    if ( !ubExplanation.empty() )
-    {
-        // Add coefficient for the explained var
-        ubExplanation.append( variable, -1 );
-        ubExplanation.incrementSize();
-        _layerOwner->updateUbExplanationForVariable( variable, ubExplanation );
+        if ( !ubExplanation.empty() )
+        {
+            // Add coefficient for the explained var
+            ubExplanation.append( variable, -1 );
+            ubExplanation.incrementSize();
+            _layerOwner->updateUbExplanationForVariable( variable, ubExplanation );
+        }
     }
 }
 

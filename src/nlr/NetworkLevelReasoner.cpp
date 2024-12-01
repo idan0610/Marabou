@@ -840,12 +840,14 @@ NetworkLevelReasoner::getUbExplanationForVariable( unsigned int variable ) const
 void NetworkLevelReasoner::updateLbExplanationForVariable( unsigned int variable,
                                                            const SparseUnsortedList &explanation )
 {
+    NLR_LOG( Stringf( "Update lower bound explanation for variable %u ", variable ).ascii() );
     _lbExplanations[variable] = explanation;
 }
 
 void NetworkLevelReasoner::updateUbExplanationForVariable( unsigned int variable,
                                                            const SparseUnsortedList &explanation )
 {
+    NLR_LOG( Stringf( "Update upper bound explanation for variable %u ", variable ).ascii() );
     _ubExplanations[variable] = explanation;
 }
 
@@ -890,6 +892,9 @@ void NetworkLevelReasoner::produceUNSATProofs()
 
 void NetworkLevelReasoner::updateExplanationInExplainer( unsigned variable, bool isUpper )
 {
+    NLR_LOG(
+        Stringf( "Update explanation in explainer for variable %u; isUpper: %u", variable, isUpper )
+            .ascii() );
     SparseUnsortedList &expl = isUpper ? _ubExplanations[variable] : _lbExplanations[variable];
     _tableau->getBoundManager().updateBoundExplanationSparse( expl, isUpper, variable );
 }
