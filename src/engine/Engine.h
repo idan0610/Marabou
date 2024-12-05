@@ -301,6 +301,9 @@ public:
 
     const List<PiecewiseLinearConstraint *> &getPiecewiseLinearConstraints() const;
 
+    void addExternalNAPConstraints( const String &externalNAPConstraintsFilename,
+                                    InputQuery &inputQuery );
+
 private:
     enum BasisRestorationRequired {
         RESTORATION_NOT_NEEDED = 0,

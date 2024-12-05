@@ -241,7 +241,12 @@ void OptionParser::initialize()
             &( *_boolOptions )[Options::DO_NOT_MERGE_CONSECUTIVE_WEIGHTED_SUM_LAYERS] )
             ->default_value(
                 ( *_boolOptions )[Options::DO_NOT_MERGE_CONSECUTIVE_WEIGHTED_SUM_LAYERS] ),
-        "Do no merge consecutive weighted-sum layers." )
+        "Do no merge consecutive weighted-sum layers." )(
+        "nap-external-constraints",
+        boost::program_options::value<std::string>(
+            &( *_stringOptions )[Options::NAP_EXTERNAL_CONSTRAINTS_FILE_PATH] )
+            ->default_value( ( *_stringOptions )[Options::NAP_EXTERNAL_CONSTRAINTS_FILE_PATH] ),
+        "File path for External NAP constraints" )
 #ifdef ENABLE_GUROBI
         ( "lp-solver",
           boost::program_options::value<std::string>( &( ( *_stringOptions )[Options::LP_SOLVER] ) )

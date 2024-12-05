@@ -229,7 +229,7 @@ bool Engine::solve( double timeoutInSeconds )
     bool splitJustPerformed = true;
     struct timespec mainLoopStart = TimeUtils::sampleMicro();
 
-//    _smtCore.printCurrentState();
+    //    _smtCore.printCurrentState();
 
     while ( true )
     {
@@ -1437,6 +1437,8 @@ bool Engine::processInputQuery( InputQuery &inputQuery, bool preprocess )
 
     try
     {
+        addExternalNAPConstraints(
+            Options::get()->getString( Options::NAP_EXTERNAL_CONSTRAINTS_FILE_PATH ), inputQuery );
         informConstraintsOfInitialBounds( inputQuery );
         invokePreprocessor( inputQuery, preprocess );
         if ( _verbosity > 1 )
@@ -3821,4 +3823,41 @@ void Engine::extractBounds( InputQuery &inputQuery )
 const List<PiecewiseLinearConstraint *> &Engine::getPiecewiseLinearConstraints() const
 {
     return _plConstraints;
+}
+
+void Engine::addExternalNAPConstraints( const String &externalNAPConstraintsFilename,
+                                        InputQuery &inputQuery )
+{
+    if ( File::exists( externalNAPConstraintsFilename ) )
+    {
+        File externalNAPConstraintsFile( externalNAPConstraintsFilename );
+        externalNAPConstraintsFile.open( IFile::MODE_READ );
+
+        List<PiecewiseLinearCaseSplit> disjuncts;
+
+        while ( true )
+        {
+            String constraint = externalNAPConstraintsFile.readLine().trim();
+
+            if ( constraint == "" )
+                break;
+
+            List<String> tokens = constraint.tokenize( " " );
+            String boundType = tokens.back();
+            int var = atoi( tokens.front().ascii() );
+
+            PiecewiseLinearCaseSplit split;
+
+            if ( boundType == "LB" )
+                split.storeBoundTightening( Tightening( var, 0, Tightening::UB ) );
+            else if ( boundType == "UB" )
+                split.storeBoundTightening( Tightening( var, 0, Tightening::LB ) );
+            else
+                ASSERT( false );
+
+            disjuncts.append( split );
+        }
+
+        inputQuery.addPiecewiseLinearConstraint( new DisjunctionConstraint( disjuncts ) );
+    }
 }
