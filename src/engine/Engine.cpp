@@ -3830,7 +3830,7 @@ const List<PiecewiseLinearConstraint *> &Engine::getPiecewiseLinearConstraints()
 void Engine::addExternalNAPConstraints( const String &externalNAPConstraintsFilename,
                                         InputQuery &inputQuery )
 {
-    if ( File::exists( externalNAPConstraintsFilename ) )
+    if ( externalNAPConstraintsFilename != "" && File::exists( externalNAPConstraintsFilename ) )
     {
         File externalNAPConstraintsFile( externalNAPConstraintsFilename );
         externalNAPConstraintsFile.open( IFile::MODE_READ );
