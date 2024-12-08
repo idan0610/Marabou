@@ -157,7 +157,8 @@ public:
         // The procedure/solver for solving the LP
         LP_SOLVER,
 
-        NAP_EXTERNAL_CONSTRAINTS_FILE_PATH
+        NAP_EXTERNAL_CONSTRAINTS_FILE_PATH,
+        NAP_EXTERNAL_CONSTRAINTS_FILE_PATH2,
     };
 
     /*

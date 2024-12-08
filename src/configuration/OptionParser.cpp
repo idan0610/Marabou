@@ -246,6 +246,11 @@ void OptionParser::initialize()
         boost::program_options::value<std::string>(
             &( *_stringOptions )[Options::NAP_EXTERNAL_CONSTRAINTS_FILE_PATH] )
             ->default_value( ( *_stringOptions )[Options::NAP_EXTERNAL_CONSTRAINTS_FILE_PATH] ),
+        "File path for External NAP constraints" )(
+        "nap-external-constraints2",
+        boost::program_options::value<std::string>(
+            &( *_stringOptions )[Options::NAP_EXTERNAL_CONSTRAINTS_FILE_PATH2] )
+            ->default_value( ( *_stringOptions )[Options::NAP_EXTERNAL_CONSTRAINTS_FILE_PATH2] ),
         "File path for External NAP constraints" )
 #ifdef ENABLE_GUROBI
         ( "lp-solver",

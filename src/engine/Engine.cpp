@@ -1439,6 +1439,8 @@ bool Engine::processInputQuery( InputQuery &inputQuery, bool preprocess )
     {
         addExternalNAPConstraints(
             Options::get()->getString( Options::NAP_EXTERNAL_CONSTRAINTS_FILE_PATH ), inputQuery );
+        addExternalNAPConstraints(
+            Options::get()->getString( Options::NAP_EXTERNAL_CONSTRAINTS_FILE_PATH2 ), inputQuery );
         informConstraintsOfInitialBounds( inputQuery );
         invokePreprocessor( inputQuery, preprocess );
         if ( _verbosity > 1 )
