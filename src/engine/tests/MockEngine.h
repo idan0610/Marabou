@@ -287,10 +287,8 @@ public:
         return true;
     }
 
-    List<PiecewiseLinearConstraint *> _plcs;
-    const List<PiecewiseLinearConstraint *> &getPiecewiseLinearConstraints() const
+    void addPLCLemma( std::shared_ptr<PLCLemma> & /*explanation*/ )
     {
-        return _plcs;
     }
 };
 
