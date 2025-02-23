@@ -611,36 +611,3 @@ bool SmtCore::pickSplitPLConstraint()
     }
     return _constraintForSplitting != NULL;
 }
-
-void SmtCore::printCurrentState() const
-{
-    std::cout << "State #"
-              << _statistics->getUnsignedAttribute( Statistics::NUM_VISITED_TREE_STATES ) <<
-        " Time " << _statistics->getTotalTimeInMicro() << " : ";
-    int i = 1;
-    for ( const auto *plc : _engine->getPiecewiseLinearConstraints()) {
-        if (plc->getType() == RELU || plc->getType() == LEAKY_RELU)
-        {
-            if (plc->getPhaseStatus() == RELU_PHASE_ACTIVE)
-                std::cout << i << " ";
-            else if(plc->getPhaseStatus() == RELU_PHASE_INACTIVE)
-                std::cout << -i << " ";
-        }
-        else if (plc->getType() == ABSOLUTE_VALUE)
-        {
-            if (plc->getPhaseStatus() == ABS_PHASE_POSITIVE)
-                std::cout << i << " ";
-            else if(plc->getPhaseStatus() == ABS_PHASE_NEGATIVE)
-                std::cout << -i << " ";
-        }
-        else if (plc->getType() == SIGN)
-        {
-            if (plc->getPhaseStatus() == SIGN_PHASE_POSITIVE)
-                std::cout << i << " ";
-            else if(plc->getPhaseStatus() == SIGN_PHASE_NEGATIVE)
-                std::cout << -i << " ";
-        }
-        ++i;
-    }
-    std::cout << std::endl;
-}

@@ -180,8 +180,6 @@ public:
     bool checkSkewFromDebuggingSolution();
     bool splitAllowsStoredSolution( const PiecewiseLinearCaseSplit &split, String &error ) const;
 
-    void printCurrentState() const;
-
 private:
     /*
       Valid splits that were implied by level 0 of the stack.
