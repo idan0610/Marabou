@@ -151,7 +151,8 @@ void Engine::applySnCSplit( PiecewiseLinearCaseSplit sncSplit, String queryId )
     _queryId = queryId;
     preContextPushHook();
     _searchTreeHandler.pushContext();
-    applySplit( sncSplit );
+    if ( !_solveWithCDCL )
+        applySplit( sncSplit );
     _boundManager.propagateTightenings();
 }
 
@@ -1600,7 +1601,8 @@ bool Engine::processInputQuery( const IQuery &inputQuery, bool preprocess )
 #ifdef BUILD_CADICAL
             constraint->registerCdclCore( &_cdclCore );
 #endif
-            if ( !Options::get()->getBool( Options::DNC_MODE ) )
+            if ( !Options::get()->getBool( Options::DNC_MODE ) &&
+                 !Options::get()->getBool( Options::PARALLEL_DEEPSOI ) )
                 constraint->initializeCDOs( &_context );
         }
         for ( const auto &constraint : _nlConstraints )

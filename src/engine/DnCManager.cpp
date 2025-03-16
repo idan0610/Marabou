@@ -159,10 +159,9 @@ void DnCManager::solve()
         throw MarabouError( MarabouError::ALLOCATION_FAILED, "DnCManager::workload" );
 
     SubQueries subQueries;
-    if ( !_runParallelDeepSoI )
-        initialDivide( subQueries );
-    else
+    if ( _runParallelDeepSoI || _baseEngine->solveWithCDCL() )
     {
+        // TODO: Rethink: how to do initial split in CDCL
         for ( unsigned i = 0; i < numWorkers; ++i )
         {
             // Create empty case splits to get each worker started.
@@ -175,9 +174,12 @@ void DnCManager::solve()
             subQueries.append( subQuery );
         }
     }
+    else
+        initialDivide( subQueries );
 
     // Create objects shared across workers
-    _numUnsolvedSubQueries = _runParallelDeepSoI ? 1 : subQueries.size();
+    _numUnsolvedSubQueries =
+        _runParallelDeepSoI || _baseEngine->solveWithCDCL() ? 1 : subQueries.size();
     std::atomic_bool shouldQuitSolving( false );
     WorkerQueue *workload = new WorkerQueue( 0 );
     for ( auto &subQuery : subQueries )

@@ -48,9 +48,8 @@ static std::string getCompiledDateTime()
 void printVersion()
 {
     std::cout << "Marabou version " << MARABOU_VERSION << " [" << GIT_BRANCH << " "
-              << GIT_COMMIT_HASH << "]"
-              << "\ncompiled with " << getCompiler() << "\non " << getCompiledDateTime()
-              << std::endl;
+              << GIT_COMMIT_HASH << "]" << "\ncompiled with " << getCompiler() << "\non "
+              << getCompiledDateTime() << std::endl;
 }
 
 void printHelpMessage()
@@ -99,7 +98,11 @@ int marabouMain( int argc, char **argv )
         }
 
         if ( options->getBool( Options::PRODUCE_PROOFS ) &&
-             ( options->getBool( Options::DNC_MODE ) ) )
+             ( options->getBool( Options::DNC_MODE )
+#ifdef BUILD_CADICAL
+               && !options->getBool( Options::SOLVE_WITH_CDCL )
+#endif
+                   ) )
         {
             options->setBool( Options::DNC_MODE, false );
             printf( "Proof production is not yet supported with snc mode, turning --snc off.\n" );

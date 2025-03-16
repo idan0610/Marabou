@@ -91,7 +91,8 @@ void DnCWorker::popOneSubQueryAndSolve( bool restoreTreeStates )
         unsigned timeoutInSeconds = subQuery->_timeoutInSeconds;
 
         // Reset the engine state
-        _engine->restoreState( *_initialState );
+        if ( !_parallelDeepSoI )
+            _engine->restoreState( *_initialState );
         _engine->reset();
 
         // TODO: each worker is going to keep a map from *CaseSplit to an
@@ -107,7 +108,10 @@ void DnCWorker::popOneSubQueryAndSolve( bool restoreTreeStates )
         ExitCode result = ExitCode::NOT_DONE;
         if ( fullSolveNeeded )
         {
-            _engine->solve( timeoutInSeconds );
+            if ( _engine->shouldSolveWithCDCL() )
+                _engine->solveWithCDCL( timeoutInSeconds );
+            else
+                _engine->solve( timeoutInSeconds );
             result = _engine->getExitCode();
         }
         else
@@ -123,12 +127,14 @@ void DnCWorker::popOneSubQueryAndSolve( bool restoreTreeStates )
         {
             // If UNSAT, continue to solve
             *_numUnsolvedSubQueries -= 1;
-            if ( _numUnsolvedSubQueries->load() == 0 || _parallelDeepSoI )
+            if ( _numUnsolvedSubQueries->load() == 0 || _parallelDeepSoI ||
+                 _engine->shouldSolveWithCDCL() )
                 *_shouldQuitSolving = true;
             delete subQuery;
         }
         else if ( result == ExitCode::TIMEOUT )
         {
+            // TODO: Check if may reach here in CDCL
             // If TIMEOUT, split the current input region and add the
             // new subQueries to the current queue
             SubQueries subQueries;
