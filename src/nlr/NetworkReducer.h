@@ -32,13 +32,8 @@ public:
 private:
     NetworkLevelReasoner *_nlr;
 
-    double determineBucketTolerance( double reductionRate, const Map<double, List<NeuronIndex>> &stabilityBuckets, unsigned totalReLUs );
-    bool suitableForMerging( unsigned secondLayerIndex,
-                             const Map<unsigned, double> &lowerBounds,
-                             const Map<unsigned, double> &upperBounds,
-                             const Set<unsigned> &varsInConstraintsUnhandledByNLR );
-    void mergeWSLayers( unsigned secondLayerIndex,
-                        Map<unsigned, LinearExpression> &eliminatedNeurons );
+    double determineBucketTolerance( double reductionRate, const Vector<double> &scores, unsigned totalReLUs );
+    void adjustLinearLayers( InputQuery &query, const List<NeuronIndex> &mergedNeurons );
 };
 
 } // namespace NLR

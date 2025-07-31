@@ -19,7 +19,7 @@
 #include "Layer.h"
 #include "ReluConstraint.h"
 #include "MockTableau.h"
-#include "MatrixMultiplication.h"
+#include "Vector.h"
 
 #include <algorithm>
 #include <cmath>
@@ -35,7 +35,7 @@ NetworkReducer::~NetworkReducer()
 {
 }
 
-double NetworkReducer::determineBucketTolerance( double reductionRate, const Vector<double> &scores )
+double NetworkReducer::determineBucketTolerance( double reductionRate, const Vector<double> &scores, unsigned totalReLUs )
 {
     if ( reductionRate == 0.0 )
         return 0.0;
@@ -43,7 +43,7 @@ double NetworkReducer::determineBucketTolerance( double reductionRate, const Vec
     Vector<double> sortedScores = scores;
     std::sort( sortedScores.begin(), sortedScores.end() );
 
-    unsigned numToRemove = (unsigned)( reductionRate * sortedScores.size() );
+    unsigned numToRemove = (unsigned)( reductionRate * totalReLUs );
     if ( numToRemove > sortedScores.size() )
         numToRemove = sortedScores.size();
 
@@ -51,6 +51,11 @@ double NetworkReducer::determineBucketTolerance( double reductionRate, const Vec
         return 0.0;
 
     return sortedScores[numToRemove - 1];
+}
+
+void NetworkReducer::adjustLinearLayers( InputQuery &query, const List<NeuronIndex> &mergedNeurons )
+{
+    // TODO: Implement this method.
 }
 
 void NetworkReducer::reduce( InputQuery &query, double reductionRate, double tolerance )
@@ -87,14 +92,27 @@ void NetworkReducer::reduce( InputQuery &query, double reductionRate, double tol
                 scores.append( score );
 
                 // Add to bucket
-                if ( !stabilityBuckets.exists( score ) )
+                bool added = false;
+                for ( auto &bucket : stabilityBuckets )
+                {
+                    if ( score <= bucket.first * ( 1 + tolerance ) )
+                    {
+                        bucket.second.append( NeuronIndex( layer->getLayerIndex(), i ) );
+                        added = true;
+                        break;
+                    }
+                }
+
+                if ( !added )
+                {
                     stabilityBuckets[score] = List<NeuronIndex>();
-                stabilityBuckets[score].append( NeuronIndex( layer->getLayerIndex(), i ) );
+                    stabilityBuckets[score].append( NeuronIndex( layer->getLayerIndex(), i ) );
+                }
             }
         }
     }
 
-    double scoreThreshold = determineBucketTolerance( reductionRate, scores );
+    double scoreThreshold = determineBucketTolerance( reductionRate, scores, totalReLUs );
 
     // Identify neurons to remove
     List<NeuronIndex> neuronsToRemove;
