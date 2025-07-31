@@ -1,6 +1,9 @@
 file(GLOB SRCS "*.cpp")
 file(GLOB HEADERS "*.h")
 
+list(APPEND SRCS "NetworkReducer.cpp")
+list(APPEND HEADERS "NetworkReducer.h")
+
 target_sources(${MARABOU_LIB} PRIVATE ${SRCS})
 target_include_directories(${MARABOU_LIB} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -18,6 +21,7 @@ network_level_reasoner_add_unit_test(DeepPolyAnalysis)
 network_level_reasoner_add_unit_test(NetworkLevelReasoner)
 network_level_reasoner_add_unit_test(WsLayerElimination)
 network_level_reasoner_add_unit_test(ParallelSolver)
+network_level_reasoner_add_unit_test(NetworkReducer)
 
 if (${ENABLE_GUROBI})
     network_level_reasoner_add_unit_test(LPRelaxation)

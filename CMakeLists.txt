@@ -1,4 +1,5 @@
 cmake_minimum_required (VERSION 3.16)
+cmake_policy(SET CMP0148 NEW)
 project(Marabou)
 
 set(MARABOU_VERSION 2.0.0)

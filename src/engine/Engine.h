@@ -48,6 +48,7 @@
 #include "SumOfInfeasibilitiesManager.h"
 #include "SymbolicBoundTighteningType.h"
 #include "UnsatCertificateNode.h"
+#include "nlr/NetworkReducer.h"
 
 #include <atomic>
 #include <context/context.h>
@@ -460,6 +461,11 @@ private:
       evaluation of topology-based bound tightening.
      */
     NLR::NetworkLevelReasoner *_networkLevelReasoner;
+
+    /*
+      The network reducer object.
+    */
+    std::unique_ptr<NLR::NetworkReducer> _networkReducer;
 
     /*
       Verbosity level:

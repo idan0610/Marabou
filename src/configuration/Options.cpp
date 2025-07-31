@@ -81,6 +81,7 @@ void Options::initializeDefaultValues()
         GlobalConfiguration::DEFAULT_EPSILON_FOR_COMPARISONS;
     _floatOptions[PROBABILITY_DENSITY_PARAMETER] = 10;
     _floatOptions[REFINEMENT_SCALING_FACTOR_INC_LIN] = 2;
+    _floatOptions[NETWORK_REDUCTION_RATE] = 0.0;
 
     /*
       String options
@@ -100,6 +101,8 @@ void Options::initializeDefaultValues()
     _stringOptions[SOI_INITIALIZATION_STRATEGY] = "input-assignment";
     _stringOptions[LP_SOLVER] = gurobiEnabled() ? "gurobi" : "native";
     _stringOptions[SOFTMAX_BOUND_TYPE] = "lse";
+    _stringOptions[REDUCTION_RATES] = "";
+    _stringOptions[REDUCTION_STRATEGY] = "none";
 }
 
 void Options::parseOptions( int argc, char **argv )

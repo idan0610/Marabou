@@ -25,6 +25,7 @@
 #include "MalformedBasisException.h"
 #include "MarabouError.h"
 #include "NLRError.h"
+#include "NetworkLevelReasoner.h"
 #include "PiecewiseLinearConstraint.h"
 #include "Preprocessor.h"
 #include "Query.h"
@@ -54,6 +55,7 @@ Engine::Engine()
     , _numVisitedStatesAtPreviousRestoration( 0 )
     , _networkLevelReasoner( NULL )
     , _verbosity( Options::get()->getInt( Options::VERBOSITY ) )
+    , _networkReducer( nullptr )
     , _lastNumVisitedStates( 0 )
     , _lastIterationWithProgress( 0 )
     , _symbolicBoundTighteningType( Options::get()->getSymbolicBoundTighteningType() )
@@ -204,7 +206,47 @@ bool Engine::solve( double timeoutInSeconds )
     if ( _solveWithMILP )
         return solveWithMILPEncoding( timeoutInSeconds );
 
+    String ratesString = Options::get()->getString( Options::REDUCTION_RATES );
+    if ( _networkReducer && !ratesString.empty() )
+    {
+        List<double> rates;
+        String aRate;
+        String_tokenizer tokenizer( ratesString, "," );
+        while ( tokenizer.hasMoreTokens() )
+        {
+            tokenizer.nextToken( aRate );
+            rates.append( aRate.toDouble() );
+        }
+
+        EngineState initialState;
+        storeState( initialState, TableauStateStorageLevel::STORE_ENTIRE_TABLEAU );
+
+        for ( const auto &rate : rates )
+        {
+            printf( "Attempting reduction with rate %.2f\n", rate );
+            std::unique_ptr<InputQuery> reducedQuery( _networkReducer->reduce( *_preprocessedQuery, rate ) );
+
+            // Create a new engine to solve the reduced query
+            // This is not ideal, but it's the simplest way to do it for now.
+            // A better way would be to restore the engine state.
+            Engine newEngine;
+            if ( newEngine.processInputQuery( *reducedQuery, _preprocessingEnabled ) )
+            {
+                if ( newEngine.solve( timeoutInSeconds ) )
+                {
+                    // If solved, we are done.
+                    // We need to extract the solution from the new engine and copy it to the current engine
+                    newEngine.extractSolution( *_preprocessedQuery );
+                    _exitCode = newEngine.getExitCode();
+                    return true;
+                }
+            }
+            restoreState( initialState );
+        }
+    }
+
     updateDirections();
+
     if ( _lpSolverType == LPSolverType::NATIVE )
         storeInitialEngineState();
     else if ( _lpSolverType == LPSolverType::GUROBI )
@@ -1403,6 +1445,7 @@ void Engine::initializeNetworkLevelReasoning()
             _networkLevelReasoner->dumpTopology( false );
             std::cout << std::endl;
         }
+        _networkReducer = std::unique_ptr<NLR::NetworkReducer>( new NLR::NetworkReducer( _networkLevelReasoner ) );
     }
 }
 

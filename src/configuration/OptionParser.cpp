@@ -241,7 +241,19 @@ void OptionParser::initialize()
             &( *_boolOptions )[Options::DO_NOT_MERGE_CONSECUTIVE_WEIGHTED_SUM_LAYERS] )
             ->default_value(
                 ( *_boolOptions )[Options::DO_NOT_MERGE_CONSECUTIVE_WEIGHTED_SUM_LAYERS] ),
-        "Do no merge consecutive weighted-sum layers." )
+        "Do no merge consecutive weighted-sum layers." )(
+        "reduction-rate",
+        boost::program_options::value<float>( &( *_floatOptions )[Options::NETWORK_REDUCTION_RATE] )
+            ->default_value( ( *_floatOptions )[Options::NETWORK_REDUCTION_RATE] ),
+        "The reduction rate for network reduction. 0.0 means no reduction." )(
+        "reduction-rates",
+        boost::program_options::value<std::string>( &( *_stringOptions )[Options::REDUCTION_RATES] )
+            ->default_value( ( *_stringOptions )[Options::REDUCTION_RATES] ),
+        "A comma-separated list of reduction rates to try." )(
+        "reduction-strategy",
+        boost::program_options::value<std::string>( &( *_stringOptions )[Options::REDUCTION_STRATEGY] )
+            ->default_value( ( *_stringOptions )[Options::REDUCTION_STRATEGY] ),
+        "The network reduction strategy to use. E.g., merge-buckets." )
 #ifdef ENABLE_GUROBI
         ( "lp-solver",
           boost::program_options::value<std::string>( &( ( *_stringOptions )[Options::LP_SOLVER] ) )

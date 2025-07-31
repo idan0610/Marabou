@@ -133,6 +133,7 @@ public:
         // In each iteration of incremental linearization, scale the maximal
         // number of constraints to refine by this number
         REFINEMENT_SCALING_FACTOR_INC_LIN,
+        NETWORK_REDUCTION_RATE,
     };
 
     enum StringOptions {
@@ -155,7 +156,9 @@ public:
         SOI_INITIALIZATION_STRATEGY,
 
         // The procedure/solver for solving the LP
-        LP_SOLVER
+        LP_SOLVER,
+        REDUCTION_RATES,
+        REDUCTION_STRATEGY,
     };
 
     /*
