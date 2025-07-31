@@ -188,6 +188,8 @@ public:
                                        const Set<unsigned> &varsInUnhandledConstraints,
                                        Map<unsigned, LinearExpression> &eliminatedNeurons );
 
+    void reduceNetwork( double reductionRate, double tolerance );
+
     /*
       Print the bounds of variables layer by layer
     */

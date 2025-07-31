@@ -19,6 +19,7 @@
 #include "Layer.h"
 #include "ReluConstraint.h"
 #include "MockTableau.h"
+#include "MatrixMultiplication.h"
 
 #include <algorithm>
 #include <cmath>
@@ -34,28 +35,33 @@ NetworkReducer::~NetworkReducer()
 {
 }
 
-InputQuery *NetworkReducer::reduce( const InputQuery &query, double reductionRate )
+double NetworkReducer::determineBucketTolerance( double reductionRate, const Vector<double> &scores )
 {
-    // 1. Create a temporary NLR from the query
-    NLR::NetworkLevelReasoner nlr;
-    List<Equation> unhandledEquations;
-    Set<unsigned> varsInUnhandledConstraints;
-    query.constructNetworkLevelReasoner( nlr, unhandledEquations, varsInUnhandledConstraints );
+    if ( reductionRate == 0.0 )
+        return 0.0;
 
-    // 2. Compute bounds using DeepPoly
-    MockTableau tableau;
-    tableau.getBoundManager().initialize( query.getNumberOfVariables() );
-    for ( unsigned i = 0; i < query.getNumberOfVariables(); ++i )
-    {
-        tableau.setLowerBound( i, query.getLowerBound( i ) );
-        tableau.setUpperBound( i, query.getUpperBound( i ) );
-    }
-    nlr.setTableau( &tableau );
-    nlr.deepPolyPropagation();
+    Vector<double> sortedScores = scores;
+    std::sort( sortedScores.begin(), sortedScores.end() );
 
-    // 3. Implement the "merge buckets" strategy
+    unsigned numToRemove = (unsigned)( reductionRate * sortedScores.size() );
+    if ( numToRemove > sortedScores.size() )
+        numToRemove = sortedScores.size();
+
+    if ( numToRemove == 0 )
+        return 0.0;
+
+    return sortedScores[numToRemove - 1];
+}
+
+void NetworkReducer::reduce( InputQuery &query, double reductionRate, double tolerance )
+{
+    // 1. Compute bounds using DeepPoly
+    _nlr->deepPolyPropagation();
+
+    // 2. Implement the "merge buckets" strategy
+    Vector<double> scores;
     Map<double, List<NeuronIndex>> stabilityBuckets;
-    const Map<unsigned, Layer *> &layers = nlr.getLayerIndexToLayer();
+    const Map<unsigned, Layer *> &layers = _nlr->getLayerIndexToLayer();
     unsigned totalReLUs = 0;
 
     for ( const auto &layerPair : layers )
@@ -72,12 +78,13 @@ InputQuery *NetworkReducer::reduce( const InputQuery &query, double reductionRat
 
                 // Get the source neuron
                 NeuronIndex sourceIndex = *layer->getActivationSources( i ).begin();
-                Layer *sourceLayer = nlr.getLayer( sourceIndex._layer );
+                Layer *sourceLayer = _nlr->getLayer( sourceIndex._layer );
                 double lb = sourceLayer->getLb( sourceIndex._neuron );
                 double ub = sourceLayer->getUb( sourceIndex._neuron );
 
                 // Calculate stability score
                 double score = std::min( std::abs( lb ), std::abs( ub ) );
+                scores.append( score );
 
                 // Add to bucket
                 if ( !stabilityBuckets.exists( score ) )
@@ -87,54 +94,44 @@ InputQuery *NetworkReducer::reduce( const InputQuery &query, double reductionRat
         }
     }
 
-    // Determine the number of neurons to remove
-    unsigned numToRemove = (unsigned)( reductionRate * totalReLUs );
+    double scoreThreshold = determineBucketTolerance( reductionRate, scores );
 
     // Identify neurons to remove
     List<NeuronIndex> neuronsToRemove;
-    unsigned removedCount = 0;
-
-    // Iterate through the buckets in ascending order of score
     for ( const auto &bucket : stabilityBuckets )
     {
-        if ( removedCount >= numToRemove )
-            break;
-
-        for ( const auto &neuron : bucket.second )
+        if ( bucket.first <= scoreThreshold )
         {
-            neuronsToRemove.append( neuron );
-            ++removedCount;
-            if ( removedCount >= numToRemove )
-                break;
+            neuronsToRemove.append( bucket.second );
         }
     }
 
-    // 4. Prune the network (on the temporary NLR)
+    // 4. Prune the network
     for ( const auto &reluToRemove : neuronsToRemove )
     {
-        Layer *reluLayer = nlr.getLayer( reluToRemove._layer );
+        Layer *reluLayer = _nlr->getLayer( reluToRemove._layer );
         unsigned reluNeuronIndex = reluToRemove._neuron;
 
         NeuronIndex sourceIndex = *reluLayer->getActivationSources( reluNeuronIndex ).begin();
-        Layer *sourceLayer = nlr.getLayer( sourceIndex._layer );
+        Layer *sourceLayer = _nlr->getLayer( sourceIndex._layer );
+        double lb = sourceLayer->getLb( sourceIndex._neuron );
         double ub = sourceLayer->getUb( sourceIndex._neuron );
 
         if ( ub <= 0 ) // Stable false
         {
             unsigned variable = reluLayer->neuronToVariable( reluNeuronIndex );
-            nlr.eliminateVariable( variable, 0.0 );
+            query.setLowerBound( variable, 0.0 );
+            query.setUpperBound( variable, 0.0 );
         }
-        else // Stable true
+        else if ( lb >= 0 ) // Stable true
         {
-            // TODO: Implement stable-true reduction
+            // The ReLU is stable-true. This means y = x.
+            // We can replace all occurrences of y with x.
+            unsigned x = sourceLayer->neuronToVariable( sourceIndex._neuron );
+            unsigned y = reluLayer->neuronToVariable( reluNeuronIndex );
+            query.addEquation( Equation( x, y, 0.0, Equation::EQ ) );
         }
     }
-
-    // 5. Generate a new query from the reduced NLR
-    InputQuery *reducedQuery = new InputQuery();
-    nlr.generateQuery( *reducedQuery );
-
-    return reducedQuery;
 }
 
 } // namespace NLR

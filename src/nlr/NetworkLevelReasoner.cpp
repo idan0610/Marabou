@@ -871,4 +871,100 @@ const Map<unsigned, Layer *> &NetworkLevelReasoner::getLayerIndexToLayer() const
     return _layerIndexToLayer;
 }
 
+void NetworkLevelReasoner::reduceNetwork( double reductionRate, double tolerance )
+{
+    // 1. Compute bounds using DeepPoly
+    deepPolyPropagation();
+
+    // 2. Implement the "merge buckets" strategy
+    Map<double, List<NeuronIndex>> stabilityBuckets;
+    unsigned totalReLUs = 0;
+
+    for ( const auto &layerPair : _layerIndexToLayer )
+    {
+        Layer *layer = layerPair.second;
+        if ( layer->getLayerType() == Layer::RELU )
+        {
+            for ( unsigned i = 0; i < layer->getSize(); ++i )
+            {
+                if ( layer->neuronEliminated( i ) )
+                    continue;
+
+                ++totalReLUs;
+
+                // Get the source neuron
+                NeuronIndex sourceIndex = *layer->getActivationSources( i ).begin();
+                Layer *sourceLayer = getLayer( sourceIndex._layer );
+                double lb = sourceLayer->getLb( sourceIndex._neuron );
+                double ub = sourceLayer->getUb( sourceIndex._neuron );
+
+                // Calculate stability score
+                double score = std::min( std::abs( lb ), std::abs( ub ) );
+
+                // Add to bucket
+                bool added = false;
+                for ( auto &bucket : stabilityBuckets )
+                {
+                    if ( score <= bucket.first * ( 1 + tolerance ) )
+                    {
+                        bucket.second.append( NeuronIndex( layer->getLayerIndex(), i ) );
+                        added = true;
+                        break;
+                    }
+                }
+
+                if ( !added )
+                {
+                    stabilityBuckets[score] = List<NeuronIndex>();
+                    stabilityBuckets[score].append( NeuronIndex( layer->getLayerIndex(), i ) );
+                }
+            }
+        }
+    }
+
+    // Determine the number of neurons to remove
+    unsigned numToRemove = (unsigned)( reductionRate * totalReLUs );
+
+    // Identify neurons to remove
+    List<NeuronIndex> neuronsToRemove;
+    unsigned removedCount = 0;
+
+    // Iterate through the buckets in ascending order of score
+    for ( const auto &bucket : stabilityBuckets )
+    {
+        if ( removedCount >= numToRemove )
+            break;
+
+        for ( const auto &neuron : bucket.second )
+        {
+            neuronsToRemove.append( neuron );
+            ++removedCount;
+            if ( removedCount >= numToRemove )
+                break;
+        }
+    }
+
+    // 4. Prune the network
+    for ( const auto &reluToRemove : neuronsToRemove )
+    {
+        Layer *reluLayer = getLayer( reluToRemove._layer );
+        unsigned reluNeuronIndex = reluToRemove._neuron;
+
+        NeuronIndex sourceIndex = *reluLayer->getActivationSources( reluNeuronIndex ).begin();
+        Layer *sourceLayer = getLayer( sourceIndex._layer );
+        double lb = sourceLayer->getLb( sourceIndex._neuron );
+        double ub = sourceLayer->getUb( sourceIndex._neuron );
+
+        if ( ub <= 0 ) // Stable false
+        {
+            unsigned variable = reluLayer->neuronToVariable( reluNeuronIndex );
+            eliminateVariable( variable, 0.0 );
+        }
+        else if ( lb >= 0 ) // Stable true
+        {
+            // TODO: Implement stable-true reduction
+        }
+    }
+}
+
 } // namespace NLR
