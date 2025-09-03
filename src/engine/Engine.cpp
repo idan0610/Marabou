@@ -3939,7 +3939,7 @@ Engine::analyseExplanationDependencies( const SparseUnsortedList &explanation,
     Vector<double> glb;
 
     // If we are to minimize dependencies, prior ground bounds are required for computing
-    // contributions
+    // the bound explained for the analyzed proof vector
     if ( GlobalConfiguration::MINIMIZE_PROOF_DEPENDENCIES )
     {
         gub = Vector<double>( _tableau->getN(), 0 );

@@ -32,19 +32,16 @@ public:
         GroundBoundEntry( unsigned id,
                           double val,
                           const std::shared_ptr<PLCLemma> &lemma,
-                          const Set<int> &clause,
                           bool isPhaseFixing )
             : id( id )
             , val( val )
             , lemma( lemma )
-            , clause( clause )
             , isPhaseFixing( isPhaseFixing )
         {
         }
         unsigned id;
         double val;
         const std::shared_ptr<PLCLemma> lemma;
-        Set<int> clause;
         bool isPhaseFixing;
         Set<std::shared_ptr<GroundBoundManager::GroundBoundEntry>> depList;
     };
@@ -75,10 +72,6 @@ public:
     Vector<double> getAllInitialGroundBounds( Tightening::BoundType boundType ) const;
 
     unsigned getCounter() const;
-
-    void
-    addClauseToGroundBoundEntry( const std::shared_ptr<GroundBoundManager::GroundBoundEntry> &entry,
-                                 const Set<int> &clause );
 
 private:
     CVC4::context::CDO<unsigned> *_counter;
