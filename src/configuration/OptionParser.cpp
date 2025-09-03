@@ -243,8 +243,7 @@ void OptionParser::initialize()
                 ( *_boolOptions )[Options::DO_NOT_MERGE_CONSECUTIVE_WEIGHTED_SUM_LAYERS] ),
         "Do no merge consecutive weighted-sum layers." )(
         "proofmin-type",
-        boost::program_options::value<std::string>(
-            &( *_stringOptions )[Options::PROOFMIN_TYPE] )
+        boost::program_options::value<std::string>( &( *_stringOptions )[Options::PROOFMIN_TYPE] )
             ->default_value( ( *_stringOptions )[Options::PROOFMIN_TYPE] ),
         "Type of algorithm used for proof minimization" )
 #ifdef ENABLE_GUROBI
