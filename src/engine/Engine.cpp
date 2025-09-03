@@ -3400,12 +3400,15 @@ void Engine::explainSimplexFailure()
 
     DEBUG( checkGroundBounds() );
 
+    // Attempt to find an infeasible variable through the bound manager
     unsigned infeasibleVar = _boundManager.getInconsistentVariable();
 
+    // Attempt to find an infeasible variable through the tableau
     if ( infeasibleVar == IBoundManager::NO_VARIABLE_FOUND ||
          !certifyInfeasibility( infeasibleVar ) )
         infeasibleVar = explainFailureWithTableau();
 
+    // Attempt to find an infeasible variable through the cost function
     if ( infeasibleVar == IBoundManager::NO_VARIABLE_FOUND )
         infeasibleVar = explainFailureWithCostFunction();
 
@@ -3415,6 +3418,7 @@ void Engine::explainSimplexFailure()
         infeasibleVar = explainFailureWithCostFunction();
     }
 
+    // No infeasible variable was found, delegation is required
     if ( infeasibleVar == IBoundManager::NO_VARIABLE_FOUND )
     {
         markLeafToDelegate();
@@ -3427,12 +3431,14 @@ void Engine::explainSimplexFailure()
 
     _statistics.incUnsignedAttribute( Statistics::NUM_CERTIFIED_LEAVES );
 
+    // Construct proof tree leaf
     Vector<double> leafContradictionVec = computeContradiction( infeasibleVar );
 
     writeContradictionToCertificate( leafContradictionVec, infeasibleVar );
 
     ( **_UNSATCertificateCurrentPointer ).makeLeaf();
 
+    // Analyze the proof vector's infeasibility to retain only a necessary subset of lemmas
     if ( GlobalConfiguration::ANALYZE_PROOF_DEPENDENCIES )
     {
         SparseUnsortedList sparseContradictionToAnalyse = SparseUnsortedList();
@@ -3914,6 +3920,7 @@ Engine::analyseExplanationDependencies( const SparseUnsortedList &explanation,
                                         bool isUpper,
                                         double targetBound )
 {
+    // Generate a linear combination of rows from proof vector (explanation)
     Vector<double> linearCombination( 0 );
     UNSATCertificateUtils::getExplanationRowCombination(
         explanation, linearCombination, _tableau->getSparseA(), _tableau->getN() );
@@ -3931,6 +3938,8 @@ Engine::analyseExplanationDependencies( const SparseUnsortedList &explanation,
     Vector<double> gub;
     Vector<double> glb;
 
+    // If we are to minimize dependencies, prior ground bounds are required for computing
+    // contributions
     if ( GlobalConfiguration::MINIMIZE_PROOF_DEPENDENCIES )
     {
         gub = Vector<double>( _tableau->getN(), 0 );
@@ -3957,6 +3966,8 @@ Engine::analyseExplanationDependencies( const SparseUnsortedList &explanation,
 
             entries.insert( entry );
 
+            // On minimization, compute contribution for all lemmas that are not already retained in
+            // the proof tree
             if ( GlobalConfiguration::MINIMIZE_PROOF_DEPENDENCIES && entry.get() && entry->lemma &&
                  !entry->lemma->getToCheck() )
             {
@@ -3971,12 +3982,14 @@ Engine::analyseExplanationDependencies( const SparseUnsortedList &explanation,
 
     if ( GlobalConfiguration::MINIMIZE_PROOF_DEPENDENCIES )
     {
+        // Compute the bound actually comupted by the proof vector
         double explanationBound =
             isUpper ? UNSATCertificateUtils::computeCombinationUpperBound(
                           linearCombination, gub.data(), glb.data(), _tableau->getN() )
                     : UNSATCertificateUtils::computeCombinationLowerBound(
                           linearCombination, gub.data(), glb.data(), _tableau->getN() );
 
+        // Sort dependencies by contribution
         std::sort(
             contributions.begin(),
             contributions.end(),
@@ -3985,6 +3998,7 @@ Engine::analyseExplanationDependencies( const SparseUnsortedList &explanation,
                 return abs( std::get<0>( a ) ) < abs( std::get<0>( b ) );
             } );
 
+        // Remove dependencies while not exceeding the target bound
         if ( explainedVar < 0 || ( isUpper && explanationBound <= targetBound ) ||
              ( !isUpper && explanationBound >= targetBound ) )
         {
@@ -4003,7 +4017,7 @@ Engine::analyseExplanationDependencies( const SparseUnsortedList &explanation,
         }
     }
 
-
+    // Recursive call for all remaining dependencies
     for ( const auto &entry : entries )
     {
         ASSERT( entry->id < id );

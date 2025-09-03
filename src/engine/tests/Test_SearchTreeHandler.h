@@ -176,7 +176,6 @@ public:
         void addTableauAuxVar( unsigned /*tableauAuxVar*/, unsigned /*constraintAuxVar*/ )
         {
         }
-
     };
 
     void setUp()
