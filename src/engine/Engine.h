@@ -259,8 +259,8 @@ public:
     */
     double getGroundBound( unsigned var, bool isUpper ) const override;
 
-    std::shared_ptr<GroundBoundManager::GroundBoundEntry> getGroundBoundEntry( unsigned var,
-                                                                               bool isUpper ) const override;
+    std::shared_ptr<GroundBoundManager::GroundBoundEntry>
+    getGroundBoundEntry( unsigned var, bool isUpper ) const override;
 
     /*
       Get the current pointer of the UNSAT certificate
@@ -917,7 +917,8 @@ private:
 
 
     /*
-     Analyze dependencies of an explanation (proof) vector, resulting in a list of necessary ground bounds for proof derivation
+     Analyze dependencies of an explanation (proof) vector, resulting in a list of necessary ground
+     bounds for proof derivation
    */
     Set<std::shared_ptr<GroundBoundManager::GroundBoundEntry>>
     analyseExplanationDependencies( const SparseUnsortedList &explanation,
