@@ -100,6 +100,7 @@ void Options::initializeDefaultValues()
     _stringOptions[SOI_INITIALIZATION_STRATEGY] = "input-assignment";
     _stringOptions[LP_SOLVER] = gurobiEnabled() ? "gurobi" : "native";
     _stringOptions[SOFTMAX_BOUND_TYPE] = "lse";
+    _stringOptions[PROOFMIN_TYPE] = "none";
 }
 
 void Options::parseOptions( int argc, char **argv )
@@ -275,4 +276,19 @@ SoftmaxBoundType Options::getSoftmaxBoundType() const
     {
         return SoftmaxBoundType::LOG_SUM_EXP_DECOMPOSITION;
     }
+}
+
+ProofminType Options::getProofminType() const
+{
+    String proofminType = String( _stringOptions.get( Options::PROOFMIN_TYPE ) );
+    if ( proofminType == "none" )
+        return ProofminType::NONE;
+    else if ( proofminType == "analyze" )
+        return ProofminType::ANALYSIS;
+    else if ( proofminType == "minimize" )
+        return ProofminType::MINIMIZATION;
+    else if ( proofminType == "globmin" )
+        return ProofminType::GLOB_MIN;
+
+    return ProofminType::NONE;
 }

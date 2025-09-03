@@ -161,7 +161,7 @@ bool UnsatCertificateNode::isValidNonLeaf() const
 
 void UnsatCertificateNode::deleteUnusedLemmas()
 {
-    if ( GlobalConfiguration::ANALYZE_PROOF_DEPENDENCIES )
+    if ( Options::get()->getProofminType() != ProofminType::NONE )
         for ( auto &lemma : _PLCExplanations )
             if ( lemma && !lemma->getToCheck() )
                 lemma = nullptr;

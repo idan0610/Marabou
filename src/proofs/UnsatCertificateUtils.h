@@ -20,6 +20,12 @@
 #include "SparseMatrix.h"
 #include "SparseUnsortedList.h"
 #include "Vector.h"
+enum ProofminType {
+    NONE = 0,
+    ANALYSIS = 1,
+    MINIMIZATION = 2,
+    GLOB_MIN = 3
+};
 
 class UNSATCertificateUtils
 {

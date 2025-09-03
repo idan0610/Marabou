@@ -48,9 +48,8 @@ static std::string getCompiledDateTime()
 void printVersion()
 {
     std::cout << "Marabou version " << MARABOU_VERSION << " [" << GIT_BRANCH << " "
-              << GIT_COMMIT_HASH << "]"
-              << "\ncompiled with " << getCompiler() << "\non " << getCompiledDateTime()
-              << std::endl;
+              << GIT_COMMIT_HASH << "]" << "\ncompiled with " << getCompiler() << "\non "
+              << getCompiledDateTime() << std::endl;
 }
 
 void printHelpMessage()
@@ -82,6 +81,12 @@ int marabouMain( int argc, char **argv )
         {
             GlobalConfiguration::USE_DEEPSOI_LOCAL_SEARCH = false;
             printf( "Proof production is not yet supported with DEEPSOI search, turning search "
+                    "off.\n" );
+        }
+        else if ( options->getString( Options::PROOFMIN_TYPE ) != "none" )
+        {
+            options->setString( Options::PROOFMIN_TYPE, "none" );
+            printf( "Proof minimization requires calling proof production. Turning minimization "
                     "off.\n" );
         }
 

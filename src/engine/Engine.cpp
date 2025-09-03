@@ -3439,7 +3439,7 @@ void Engine::explainSimplexFailure()
     ( **_UNSATCertificateCurrentPointer ).makeLeaf();
 
     // Analyze the proof vector's infeasibility to retain only a necessary subset of lemmas
-    if ( GlobalConfiguration::ANALYZE_PROOF_DEPENDENCIES )
+    if ( Options::get()->getProofminType() != ProofminType::NONE )
     {
         SparseUnsortedList sparseContradictionToAnalyse = SparseUnsortedList();
         leafContradictionVec.empty()
@@ -3447,8 +3447,20 @@ void Engine::explainSimplexFailure()
             : sparseContradictionToAnalyse.initialize( leafContradictionVec.data(),
                                                        leafContradictionVec.size() );
 
-        analyseExplanationDependencies(
-            sparseContradictionToAnalyse, _groundBoundManager.getCounter(), -1, true, 0 );
+        Set<std::shared_ptr<GroundBoundManager::GroundBoundEntry>> deps =
+            analyseExplanationDependencies(
+                sparseContradictionToAnalyse, _groundBoundManager.getCounter(), -1, true, 0 );
+
+        // For global minimization, marking lemmas to keep is performed after the analysis
+        // termination
+        if ( Options::get()->getProofminType() == ProofminType::GLOB_MIN )
+            for ( const auto &entry : deps )
+                for ( const auto &subEntry : entry->depList )
+                    if ( subEntry->lemma && !subEntry->lemma->getToCheck() )
+                    {
+                        subEntry->lemma->setToCheck();
+                        _statistics.incUnsignedAttribute( Statistics::NUM_LEMMAS_USED );
+                    }
     }
 }
 
@@ -3900,6 +3912,10 @@ void Engine::incNumOfLemmas()
 
     ASSERT( _UNSATCertificate && _UNSATCertificateCurrentPointer )
     _statistics.incUnsignedAttribute( Statistics::NUM_LEMMAS );
+
+    // If no minimization is applied, count all lemmas as used
+    if ( Options::get()->getProofminType() == ProofminType::NONE )
+        _statistics.incUnsignedAttribute( Statistics::NUM_LEMMAS_USED );
 }
 
 const List<PiecewiseLinearConstraint *> *Engine::getPiecewiseLinearConstraints() const
@@ -3920,6 +3936,7 @@ Engine::analyseExplanationDependencies( const SparseUnsortedList &explanation,
                                         bool isUpper,
                                         double targetBound )
 {
+    ProofminType proofMinType = Options::get()->getProofminType();
     // Generate a linear combination of rows from proof vector (explanation)
     Vector<double> linearCombination( 0 );
     UNSATCertificateUtils::getExplanationRowCombination(
@@ -3940,7 +3957,7 @@ Engine::analyseExplanationDependencies( const SparseUnsortedList &explanation,
 
     // If we are to minimize dependencies, prior ground bounds are required for computing
     // the bound explained for the analyzed proof vector
-    if ( GlobalConfiguration::MINIMIZE_PROOF_DEPENDENCIES )
+    if ( proofMinType == ProofminType::MINIMIZATION || proofMinType == ProofminType::GLOB_MIN )
     {
         gub = Vector<double>( _tableau->getN(), 0 );
         glb = Vector<double>( _tableau->getN(), 0 );
@@ -3968,8 +3985,9 @@ Engine::analyseExplanationDependencies( const SparseUnsortedList &explanation,
 
             // On minimization, compute contribution for all lemmas that are not already retained in
             // the proof tree
-            if ( GlobalConfiguration::MINIMIZE_PROOF_DEPENDENCIES && entry.get() && entry->lemma &&
-                 !entry->lemma->getToCheck() )
+            if ( ( proofMinType == ProofminType::MINIMIZATION ||
+                   proofMinType == ProofminType::GLOB_MIN ) &&
+                 entry.get() && entry->lemma && !entry->lemma->getToCheck() )
             {
                 double contribution =
                     ( entry->val - _groundBoundManager.getGroundBoundUpToId( var, btype, 0 ) ) *
@@ -3979,16 +3997,19 @@ Engine::analyseExplanationDependencies( const SparseUnsortedList &explanation,
             }
         }
     }
+    double explanationBound = 0;
 
-    if ( GlobalConfiguration::MINIMIZE_PROOF_DEPENDENCIES )
+    // Compute the bound actually computed by the proof vector
+    if ( proofMinType == ProofminType::MINIMIZATION || proofMinType == ProofminType::GLOB_MIN )
+        explanationBound = isUpper
+                             ? UNSATCertificateUtils::computeCombinationUpperBound(
+                                   linearCombination, gub.data(), glb.data(), _tableau->getN() )
+                             : UNSATCertificateUtils::computeCombinationLowerBound(
+                                   linearCombination, gub.data(), glb.data(), _tableau->getN() );
+
+
+    if ( proofMinType == ProofminType::MINIMIZATION )
     {
-        // Compute the bound actually comupted by the proof vector
-        double explanationBound =
-            isUpper ? UNSATCertificateUtils::computeCombinationUpperBound(
-                          linearCombination, gub.data(), glb.data(), _tableau->getN() )
-                    : UNSATCertificateUtils::computeCombinationLowerBound(
-                          linearCombination, gub.data(), glb.data(), _tableau->getN() );
-
         // Sort dependencies by contribution
         std::sort(
             contributions.begin(),
@@ -4016,38 +4037,130 @@ Engine::analyseExplanationDependencies( const SparseUnsortedList &explanation,
             }
         }
     }
-
-    // Recursive call for all remaining dependencies
-    for ( const auto &entry : entries )
+    // For both minimization and analysis
+    if ( proofMinType != ProofminType::GLOB_MIN )
     {
-        ASSERT( entry->id < id );
-
-        if ( entry->lemma && !entry->lemma->getExplanations().empty() &&
-             !entry->lemma->getExplanations().front().empty() && !entry->lemma->getToCheck() )
+        // Recursive call for all remaining dependencies
+        for ( const auto &entry : entries )
         {
-            entry->lemma->setToCheck();
+            ASSERT( entry->id < id );
 
-            _statistics.incUnsignedAttribute( Statistics::NUM_LEMMAS_USED );
-            std::_List_const_iterator<unsigned int> it = entry->lemma->getCausingVars().begin();
-            for ( const auto &expl : entry->lemma->getExplanations() )
+            if ( entry->lemma && !entry->lemma->getExplanations().empty() &&
+                 !entry->lemma->getExplanations().front().empty() && !entry->lemma->getToCheck() )
             {
-                if ( expl.empty() )
+                entry->lemma->setToCheck();
+
+                _statistics.incUnsignedAttribute( Statistics::NUM_LEMMAS_USED );
+                std::_List_const_iterator<unsigned int> it = entry->lemma->getCausingVars().begin();
+                for ( const auto &expl : entry->lemma->getExplanations() )
                 {
+                    if ( expl.empty() )
+                    {
+                        std::advance( it, 1 );
+                        continue;
+                    }
+
+                    analyseExplanationDependencies( expl,
+                                                    entry->id,
+                                                    *it,
+                                                    entry->lemma->getCausingVarBound() ==
+                                                        Tightening::UB,
+                                                    entry->lemma->getMinTargetBound() );
+
                     std::advance( it, 1 );
-                    continue;
+                }
+            }
+        }
+
+        return entries;
+    }
+    // Global minimization algorithm
+    else
+    {
+        // Compute the number of dependencies that are not already included in the proof
+        Set<std::shared_ptr<GroundBoundManager::GroundBoundEntry>> tempEntries;
+        for ( const auto &entry : entries )
+        {
+            ASSERT( entry->id < id );
+
+            if ( entry->lemma && !entry->lemma->getToCheck() && entry->depList.empty() )
+            {
+                // Ensure analysing the dependency list at most once (even for lemmas without
+                // dependencies)
+                entry->depList.insert( entry );
+
+                std::_List_const_iterator<unsigned int> it = entry->lemma->getCausingVars().begin();
+                for ( const auto &expl : entry->lemma->getExplanations() )
+                {
+                    if ( expl.empty() )
+                    {
+                        std::advance( it, 1 );
+                        continue;
+                    }
+
+                    tempEntries.insert( analyseExplanationDependencies(
+                        expl,
+                        entry->id,
+                        *it,
+                        entry->lemma->getCausingVarBound() == Tightening::UB,
+                        entry->lemma->getMinTargetBound() ) );
+
+                    std::advance( it, 1 );
                 }
 
-                analyseExplanationDependencies( expl,
-                                                entry->id,
-                                                *it,
-                                                entry->lemma->getCausingVarBound() ==
-                                                    Tightening::UB,
-                                                entry->lemma->getMinTargetBound() );
+                // Add the all downstream dependencies to the list
+                for ( const auto &tempEntry : tempEntries )
+                {
+                    if ( tempEntry->lemma && !tempEntry->lemma->getToCheck() )
+                    {
+                        entry->depList.insert( tempEntry );
+                        for ( const auto &recEntry : tempEntry->depList )
+                            if ( recEntry->lemma && !recEntry->lemma->getToCheck() )
+                                entry->depList.insert( recEntry );
+                    }
+                }
+                tempEntries.clear();
+            }
+        }
 
-                std::advance( it, 1 );
+        // Sort dependencies by the number of their downstream dependencies, break ties with
+        // contribution
+        std::sort(
+            contributions.begin(),
+            contributions.end(),
+            []( std::tuple<double, std::shared_ptr<GroundBoundManager::GroundBoundEntry>> a,
+                std::tuple<double, std::shared_ptr<GroundBoundManager::GroundBoundEntry>> b ) {
+                if ( std::get<1>( a )->depList.size() == std::get<1>( b )->depList.size() )
+                    return abs( std::get<0>( a ) ) < abs( std::get<0>( b ) );
+                return std::get<1>( a )->depList.size() > std::get<1>( b )->depList.size();
+            } );
+
+        // Remove dependencies while not exceeding the target bound.
+        // Repeat until saturation
+        if ( explainedVar < 0 || ( isUpper && explanationBound <= targetBound ) ||
+             ( !isUpper && explanationBound >= targetBound ) )
+        {
+            bool changed = true;
+            double overallContributions = 0;
+            while ( changed )
+            {
+                changed = false;
+                for ( const auto &contribution : contributions )
+                {
+                    overallContributions += abs( std::get<0>( contribution ) );
+                    if ( entries.exists( std::get<1>( contribution ) ) &&
+                         FloatUtils::lt( overallContributions,
+                                         abs( explanationBound - targetBound ),
+                                         GlobalConfiguration::LEMMA_CERTIFICATION_TOLERANCE ) )
+                    {
+                        entries.erase( std::get<1>( contribution ) );
+                        changed = true;
+                    }
+                    else
+                        overallContributions -= abs( std::get<0>( contribution ) );
+                }
             }
         }
     }
-
     return entries;
 }

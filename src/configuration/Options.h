@@ -27,6 +27,7 @@
 #include "SoISearchStrategy.h"
 #include "SoftmaxBoundType.h"
 #include "SymbolicBoundTighteningType.h"
+#include "UnsatCertificateUtils.h"
 #include "boost/program_options.hpp"
 
 /*
@@ -155,7 +156,10 @@ public:
         SOI_INITIALIZATION_STRATEGY,
 
         // The procedure/solver for solving the LP
-        LP_SOLVER
+        LP_SOLVER,
+
+        // Proof Minimization Type
+        PROOFMIN_TYPE
     };
 
     /*
@@ -188,6 +192,7 @@ public:
     SoISearchStrategy getSoISearchStrategy() const;
     LPSolverType getLPSolverType() const;
     SoftmaxBoundType getSoftmaxBoundType() const;
+    ProofminType getProofminType() const;
 
     /*
       Retrieve the value of the various options, by type
