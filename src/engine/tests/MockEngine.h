@@ -95,14 +95,7 @@ public:
         }
     }
 
-    void applyPlcPhaseFixingTightenings( PiecewiseLinearConstraint & /*constraint*/ ) override
-    {
-    }
-
-
-    void postContextPopHook() override
-    {
-    }
+    void postContextPopHook() {};
 
     void preContextPushHook() override
     {
@@ -139,17 +132,17 @@ public:
         _timeToSolve = timeToSolve;
     }
 
-    ExitCode getExitCode() const override
-    {
-        return _exitCode;
-    }
-
-    void setExitCode( ExitCode exitCode ) override
+    void setExitCode( IEngine::ExitCode exitCode )
     {
         _exitCode = exitCode;
     }
 
-    void reset() override
+    IEngine::ExitCode getExitCode() const
+    {
+        return _exitCode;
+    }
+
+    void reset()
     {
     }
 
@@ -300,9 +293,8 @@ public:
     {
     }
 
-    bool propagateBoundManagerTightenings() override
+    void propagateBoundManagerTightenings()
     {
-        return false;
     }
 
     bool shouldProduceProofs() const override
@@ -317,123 +309,14 @@ public:
         return nullptr;
     }
 
-    bool shouldSolveWithMILP() const override
-    {
-        return false;
-    }
-
-    void initializeSolver() override
-    {
-    }
-
-    void assertEngineBoundsForSplit( const PiecewiseLinearCaseSplit & /*split*/ ) override
-    {
-    }
-
-    bool shouldExitDueToTimeout( double ) const override
-    {
-        return false;
-    }
-
-    unsigned getVerbosity() const override
-    {
-        return 0;
-    }
-
-    void exportQueryWithError( String ) override
-    {
-    }
-
     const List<PiecewiseLinearConstraint *> *getPiecewiseLinearConstraints() const override
     {
         return NULL;
     }
 
-    LPSolverType getLpSolverType() const override
-    {
-        return LPSolverType::NATIVE;
-    }
-
-    NLR::NetworkLevelReasoner *getNetworkLevelReasoner() const override
-    {
-        return nullptr;
-    }
-
-    void restoreInitialEngineState() override
-    {
-    }
-
     void incNumOfLemmas() override
     {
     }
-
-    bool solveWithMILPEncoding( double timeoutInSeconds ) override
-    {
-        if ( timeoutInSeconds >= _timeToSolve )
-            _exitCode = ExitCode::TIMEOUT;
-        return _exitCode == ExitCode::SAT;
-    }
-
-    bool shouldSolveWithCDCL() const override
-    {
-        return false;
-    }
-
-    List<unsigned> getOutputVariables() const override
-    {
-        return List<unsigned>();
-    }
-
-    SymbolicBoundTighteningType getSymbolicBoundTighteningType() const override
-    {
-        return SymbolicBoundTighteningType::NONE;
-    }
-
-    const IBoundManager *getBoundManager() const override
-    {
-        return nullptr;
-    }
-
-    std::shared_ptr<Query> getInputQuery() const
-    {
-        return std::shared_ptr<Query>( nullptr );
-    }
-
-#ifdef BUILD_CADICAL
-    bool solveWithCDCL( double timeoutInSeconds ) override
-    {
-        if ( timeoutInSeconds >= _timeToSolve )
-            _exitCode = ExitCode::TIMEOUT;
-        return _exitCode == ExitCode::SAT;
-    }
-
-    Set<int> clauseFromContradictionVector( const SparseUnsortedList &,
-                                            unsigned,
-                                            int,
-                                            bool,
-                                            double targetBound ) override
-    {
-        return Set<int>();
-    }
-
-    Set<int> explainPhaseWithProof( const PiecewiseLinearConstraint * ) override
-    {
-        return Set<int>();
-    }
-
-    void explainGurobiFailure() override
-    {
-    }
-
-    void removeLiteralFromPropagations( int /*literal*/ ) override
-    {
-    }
-
-    bool checkAssignmentComplianceWithClause( const Set<int> & /*clause*/ ) const override
-    {
-        return true;
-    }
-#endif
 };
 
 #endif // __MockEngine_h__

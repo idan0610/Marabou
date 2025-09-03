@@ -19,14 +19,13 @@
 #include "FloatUtils.h"
 #include "MalformedBasisException.h"
 #include "MarabouError.h"
-#include "QuitFromPrecisionRestorationException.h"
 #include "SearchTreeHandler.h"
 #include "TableauStateStorageLevel.h"
 #include "UnsatCertificateNode.h"
 
 void PrecisionRestorer::storeInitialEngineState( const IEngine &engine )
 {
-    engine.storeState( _initialEngineState, TableauStateStorageLevel::STORE_BASICS_ONLY );
+    engine.storeState( _initialEngineState, TableauStateStorageLevel::STORE_ENTIRE_TABLEAU_STATE );
 }
 
 void PrecisionRestorer::restoreInitialEngineState( IEngine &engine )
@@ -75,7 +74,7 @@ void PrecisionRestorer::restorePrecision( IEngine &engine,
     searchTreeHandler.allSplitsSoFar( targetSplits );
 
     // Restore engine and tableau to their original form
-    restoreInitialEngineState( engine );
+    engine.restoreState( _initialEngineState );
     engine.postContextPopHook();
     DEBUG( tableau.verifyInvariants() );
 
@@ -129,14 +128,16 @@ void PrecisionRestorer::restorePrecision( IEngine &engine,
         }
     }
 
-    if ( engine.shouldProduceProofs() )
-        engine.setBoundExplainerContent( &boundExplainerBackup );
-
     for ( unsigned i = 0; i < targetN; ++i )
     {
         tableau.tightenUpperBoundNaively( i, upperBoundsBackup[i] );
         tableau.tightenLowerBoundNaively( i, lowerBoundsBackup[i] );
     }
+
+    if ( engine.shouldProduceProofs() )
+        engine.setBoundExplainerContent( &boundExplainerBackup );
+
+    engine.propagateBoundManagerTightenings();
 
     // Restore constraint status
     for ( const auto &pair : targetEngineState._plConstraintToState )

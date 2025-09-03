@@ -61,8 +61,8 @@ public:
                               unsigned targetLeyer,
                               unsigned targetNeuron );
 
-    unsigned getNumberOfLayers() const override;
-    const Layer *getLayer( unsigned index ) const override;
+    unsigned getNumberOfLayers() const;
+    const Layer *getLayer( unsigned index ) const;
     Layer *getLayer( unsigned index );
 
     /*
@@ -117,7 +117,7 @@ public:
     */
 
     void setTableau( const ITableau *tableau );
-    const ITableau *getTableau() const override;
+    const ITableau *getTableau() const;
 
     void obtainCurrentBounds( const Query &inputQuery );
     void obtainCurrentBounds();
@@ -130,10 +130,8 @@ public:
     void MILPTighteningForOneLayer( unsigned targetIndex );
     void iterativePropagation();
 
-    void receiveTighterBound( Tightening tightening ) override;
-    void receiveOutputTighterBound( Tightening tightening ) override;
+    void receiveTighterBound( Tightening tightening );
     void getConstraintTightenings( List<Tightening> &tightenings );
-    void getOutputBounds( Map<Pair<unsigned int, Tightening::BoundType>, double> &outputBounds );
     void clearConstraintTightenings();
 
     /*
@@ -198,13 +196,9 @@ public:
     /*
       Get the size of the widest layer
     */
-    unsigned getMaxLayerSize() const override;
+    unsigned getMaxLayerSize() const;
 
-    const Map<unsigned, Layer *> &getLayerIndexToLayer() const override;
-
-    void setBounds( unsigned layer, unsigned int neuron, double lower, double upper );
-
-    NeuronIndex variableToNeuron( unsigned variable ) const;
+    const Map<unsigned, Layer *> &getLayerIndexToLayer() const;
 
 private:
     Map<unsigned, Layer *> _layerIndexToLayer;
@@ -212,7 +206,7 @@ private:
 
     // Tightenings discovered by the various layers
     List<Tightening> _boundTightenings;
-    Map<Pair<unsigned, Tightening::BoundType>, double> _outputBounds;
+
 
     std::unique_ptr<DeepPolyAnalysis> _deepPolyAnalysis;
 

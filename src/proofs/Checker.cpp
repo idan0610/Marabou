@@ -213,6 +213,7 @@ bool Checker::checkAllPLCExplanations( const UnsatCertificateNode *node, double 
     {
         if ( !plcLemma )
             continue;
+
         DEBUG(
             ASSERT( !GlobalConfiguration::ANALYZE_PROOF_DEPENDENCIES || plcLemma->getToCheck() ) );
 

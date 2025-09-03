@@ -59,8 +59,8 @@ public:
         engine.setVerbosity( 2 );
         TS_ASSERT_THROWS_NOTHING( engine.processInputQuery( ipq ) );
         TS_ASSERT_THROWS_NOTHING( engine.solve() );
-        ExitCode code = engine.getExitCode();
-        TS_ASSERT( code == ExitCode::SAT || code == ExitCode::UNKNOWN );
+        Engine::ExitCode code = engine.getExitCode();
+        TS_ASSERT( code == Engine::SAT || code == Engine::UNKNOWN );
     }
 
     void _test_incremental_linearization_sigmoid()
@@ -117,9 +117,10 @@ public:
         TS_ASSERT( initialEngine->processInputQuery( ipq ) );
         TS_ASSERT_THROWS_NOTHING( initialEngine->solve() );
 
-        TS_ASSERT( initialEngine->getExitCode() == ExitCode::UNKNOWN ||
-                   initialEngine->getExitCode() == ExitCode::SAT );
-        if ( initialEngine->getExitCode() == ExitCode::SAT )
+        TS_ASSERT( initialEngine->getExitCode() == Engine::UNKNOWN );
+        TS_ASSERT( initialEngine->getExitCode() == Engine::UNKNOWN ||
+                   initialEngine->getExitCode() == Engine::SAT );
+        if ( initialEngine->getExitCode() == Engine::SAT )
         {
             delete initialEngine;
             return;
@@ -134,7 +135,7 @@ public:
         std::cout << ipq.getSolutionValue( 0 ) << std::endl;
         std::cout << ipq.getSolutionValue( 1 ) << std::endl;
 
-        TS_ASSERT_EQUALS( afterEngine->getExitCode(), ExitCode::SAT );
+        TS_ASSERT_EQUALS( afterEngine->getExitCode(), Engine::SAT );
 
         if ( afterEngine )
             delete afterEngine;

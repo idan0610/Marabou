@@ -14,9 +14,6 @@
 
 #include "ReluConstraint.h"
 
-#ifdef BUILD_CADICAL
-#include "CdclCore.h"
-#endif
 #include "Debug.h"
 #include "DivideStrategy.h"
 #include "FloatUtils.h"
@@ -134,11 +131,6 @@ void ReluConstraint::checkIfLowerBoundUpdateFixesPhase( unsigned variable, doubl
         setPhaseStatus( RELU_PHASE_ACTIVE );
     else if ( _auxVarInUse && variable == _aux && FloatUtils::isPositive( bound ) )
         setPhaseStatus( RELU_PHASE_INACTIVE );
-
-#ifdef BUILD_CADICAL
-    if ( !_cdclVars.empty() && phaseFixed() && isActive() )
-        _cdclCore->addLiteralToPropagate( propagatePhaseAsLit() );
-#endif
 }
 
 void ReluConstraint::checkIfUpperBoundUpdateFixesPhase( unsigned variable, double bound )
@@ -148,11 +140,6 @@ void ReluConstraint::checkIfUpperBoundUpdateFixesPhase( unsigned variable, doubl
 
     if ( _auxVarInUse && variable == _aux && FloatUtils::isZero( bound ) )
         setPhaseStatus( RELU_PHASE_ACTIVE );
-
-#ifdef BUILD_CADICAL
-    if ( !_cdclVars.empty() && phaseFixed() && isActive() )
-        _cdclCore->addLiteralToPropagate( propagatePhaseAsLit() );
-#endif
 }
 
 void ReluConstraint::notifyLowerBound( unsigned variable, double newBound )
@@ -1159,94 +1146,6 @@ void ReluConstraint::addTableauAuxVar( unsigned tableauAuxVar, unsigned constrai
         _tableauAuxVars.append( tableauAuxVar );
 }
 
-#ifdef BUILD_CADICAL
-void ReluConstraint::booleanAbstraction(
-    Map<unsigned int, PiecewiseLinearConstraint *> &cadicalVarToPlc )
-{
-    ASSERT( !cadicalVarToPlc.empty() );
-    unsigned int idx = cadicalVarToPlc.size();
-    _cdclVars.append( idx );
-    cadicalVarToPlc.insert( idx, this );
-}
-
-int ReluConstraint::propagatePhaseAsLit() const
-{
-    ASSERT( _cdclVars.size() == 1 )
-    if ( getPhaseStatus() == RELU_PHASE_ACTIVE )
-        return _cdclVars.back();
-    else if ( getPhaseStatus() == RELU_PHASE_INACTIVE )
-        return -_cdclVars.back();
-    else
-        return 0;
-}
-
-void ReluConstraint::propagateLitAsSplit( int lit )
-{
-    ASSERT( _cdclVars.exists( FloatUtils::abs( lit ) ) );
-
-    setActiveConstraint( false );
-
-    if ( lit > 0 )
-        setPhaseStatus( RELU_PHASE_ACTIVE );
-    else
-        setPhaseStatus( RELU_PHASE_INACTIVE );
-}
-
-bool ReluConstraint::isBoundFixingPhase( unsigned int var,
-                                         double bound,
-                                         Tightening::BoundType boundType ) const
-{
-    if ( getPhaseStatus() == RELU_PHASE_ACTIVE )
-    {
-        if ( var == _b && boundType == Tightening::LB && !FloatUtils::isNegative( bound ) )
-            return true;
-
-        if ( var == _f && boundType == Tightening::LB && FloatUtils::isPositive( bound ) )
-            return true;
-
-        if ( _auxVarInUse && var == _aux && boundType == Tightening::UB &&
-             FloatUtils::isZero( bound ) )
-            return true;
-    }
-    else if ( getPhaseStatus() == RELU_PHASE_INACTIVE )
-    {
-        if ( var == _b && boundType == Tightening::UB && !FloatUtils::isPositive( bound ) )
-            return true;
-
-        if ( var == _f && boundType == Tightening::UB && !FloatUtils::isPositive( bound ) )
-            return true;
-
-        if ( _auxVarInUse && var == _aux && boundType == Tightening::LB &&
-             FloatUtils::isPositive( bound ) )
-            return true;
-    }
-
-    return false;
-}
-
-int ReluConstraint::getLiteralForDecision() const
-{
-    ASSERT( getPhaseStatus() == PHASE_NOT_FIXED );
-
-    if ( _direction == RELU_PHASE_INACTIVE )
-        return -(int)_cdclVars.front();
-    if ( _direction == RELU_PHASE_ACTIVE )
-        return (int)_cdclVars.front();
-
-    if ( existsAssignment( _f ) )
-        if ( FloatUtils::isPositive( getAssignment( _f ) ) )
-            return (int)_cdclVars.front();
-        else
-            return -(int)_cdclVars.front();
-    else
-        return -(int)_cdclVars.front();
-}
-
-unsigned ReluConstraint::getVariableForDecision() const
-{
-    return _cdclVars.front();
-}
-#endif
 
 //
 // Local Variables:

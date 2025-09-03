@@ -64,7 +64,6 @@
 #include "context/cdo.h"
 #include "context/context.h"
 
-class CdclCore;
 class Equation;
 class BoundManager;
 class ITableau;
@@ -370,14 +369,6 @@ public:
     }
 
     /*
-      Register the SearchTreeHandler object
-     */
-    inline void registerCdclCore( CdclCore *cdclCore )
-    {
-        _cdclCore = cdclCore;
-    }
-
-    /*
       Method to set PhaseStatus of the constraint. Encapsulates both context
       dependent and context-less behavior. Initialized to PHASE_NOT_FIXED.
      */
@@ -524,52 +515,6 @@ public:
         _cdPhaseFixingEntry->set( groundBoundEntry );
     }
 
-#ifdef BUILD_CADICAL
-    /*
-     Creates boolean abstraction of phases and adds abstracted variables to the SAT solver
-   */
-    virtual void
-    booleanAbstraction( Map<unsigned int, PiecewiseLinearConstraint *> &cadicalVarToPlc ) = 0;
-
-    /*
-     Returns a literal representing a boolean propagation
-     Returns 0 if no propagation can be deduced
-    */
-    virtual int propagatePhaseAsLit() const = 0;
-
-    /*
-      Fixes a phase status corresponding to a literal,
-      assuming the literal is part of the boolean abstraction
-    */
-    virtual void propagateLitAsSplit( int lit ) = 0;
-
-    virtual bool isBoundFixingPhase( unsigned /*var*/,
-                                     double /*bound*/,
-                                     Tightening::BoundType /*boundType*/ ) const
-    {
-        // TODO: remove default implementation after supporting other PLCs in CDCL
-        return true;
-    }
-
-    /*
-      Returns on which phase to decide this constraint, as a cadical var
-     */
-    virtual int getLiteralForDecision() const
-    {
-        // TODO: remove default implementation after supporting other PLCs in CDCL
-        return 0;
-    }
-
-    /*
-      Returns a cadical variable of this constraint, for decision
-     */
-    virtual unsigned getVariableForDecision() const
-    {
-        // TODO: remove default implementation after supporting other PLCs in CDCL
-        return 0;
-    }
-#endif
-
 protected:
     unsigned _numCases; // Number of possible cases/phases for this constraint
                         // (e.g. 2 for ReLU, ABS, SIGN; >=2 for Max and Disjunction )
@@ -613,15 +558,7 @@ protected:
       The gurobi object for solving the LPs during the search.
     */
     GurobiWrapper *_gurobi;
-
-    /*
-      The CdclCore object servers as the theory solver of CDCL.
-     */
-    CdclCore *_cdclCore;
-
-    List<unsigned> _tableauAuxVars;
-    List<unsigned> _cdclVars;
-
+    
     CVC4::context::CDO<std::shared_ptr<GroundBoundManager::GroundBoundEntry>> *_cdPhaseFixingEntry;
 
     /*
@@ -726,6 +663,8 @@ protected:
         else
             return _gurobi->getAssignment( Stringf( "x%u", variable ) );
     }
+
+    List<unsigned> _tableauAuxVars;
 };
 
 #endif // __PiecewiseLinearConstraint_h__

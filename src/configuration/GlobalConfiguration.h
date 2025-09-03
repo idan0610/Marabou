@@ -191,10 +191,6 @@ public:
     // When doing explicit bound tightening, should we repeat until saturation?
     static const bool EXPLICIT_BOUND_TIGHTENING_UNTIL_SATURATION;
 
-    // Percentage of bounds (out of 2*num of variables) learned during basis bound tightening, to be
-    // used as a threshold to require a split
-    static const double EXPLICIT_BASIS_BOUND_TIGHTENING_PERCENTAGE_THRESHOLD;
-
     /*
       Symbolic bound tightening options
     */
@@ -267,7 +263,7 @@ public:
      */
     static const unsigned MAX_ROUNDS_OF_BACKWARD_ANALYSIS;
 
-    /* While solving with CDCL, denotes if to use proof-based clauses or not
+    /* Analyze the number of lemma dependencies when producing proofs
      */
     static const bool ANALYZE_PROOF_DEPENDENCIES;
 
@@ -275,14 +271,6 @@ public:
      */
     static const bool MINIMIZE_PROOF_DEPENDENCIES;
 
-    /* Whether to convert the input verification query into a reachability query:
-     */
-    static const bool CONVERT_VERIFICATION_QUERY_INTO_REACHABILITY_QUERY;
-
-    /* While solving with CDCL, denotes if to try and shorten clauses or not
-     */
-    static const bool CDCL_SHORTEN_CLAUSES;
-    static const bool CDCL_SHORTEN_CLAUSES_WITH_QUICKXPLAIN;
 
 #ifdef ENABLE_GUROBI
     /*
@@ -313,7 +301,6 @@ public:
     static const bool SOI_LOGGING;
     static const bool SCORE_TRACKER_LOGGING;
     static const bool CEGAR_LOGGING;
-    static const bool CDCL_LOGGING;
 };
 
 #endif // __GlobalConfiguration_h__

@@ -16,7 +16,6 @@
 
 #include "Debug.h"
 
-
 PLCLemma::PLCLemma( const List<unsigned> &causingVars,
                     unsigned affectedVar,
                     double bound,
@@ -112,7 +111,6 @@ double PLCLemma::getMinTargetBound() const
 {
     return _minTargetBound;
 }
-
 
 void PLCLemma::setToCheck()
 {

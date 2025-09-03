@@ -273,12 +273,6 @@ void InputQuery::markOutputVariable( unsigned variable, unsigned outputIndex )
     _outputIndexToVariable[outputIndex] = variable;
 }
 
-void InputQuery::unmarkOutputVariables()
-{
-    _variableToOutputIndex.clear();
-    _outputIndexToVariable.clear();
-}
-
 unsigned InputQuery::inputVariableByIndex( unsigned index ) const
 {
     ASSERT( _inputIndexToVariable.exists( index ) );
@@ -383,9 +377,6 @@ Query *InputQuery::generateQuery() const
         query->markOutputVariable( pair.first, pair.second );
     }
 
-    for ( const auto &equation : _outputConstraints )
-        query->addOutputConstraint( equation );
-
     for ( const auto &pair : _solution )
     {
         query->setSolutionValue( pair.first, pair.second );
@@ -404,24 +395,4 @@ void InputQuery::dump() const
     Query *query = generateQuery();
     query->dump();
     delete query;
-}
-
-void InputQuery::addOutputConstraint( const Equation &equation )
-{
-    _outputConstraints.append( equation );
-}
-
-const List<Equation> &InputQuery::getOutputConstraints() const
-{
-    return _outputConstraints;
-}
-
-bool InputQuery::isQueryWithDisjunction() const
-{
-    return _isQueryWithDisjunction;
-}
-
-void InputQuery::markQueryWithDisjunction()
-{
-    _isQueryWithDisjunction = true;
 }

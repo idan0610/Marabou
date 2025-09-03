@@ -34,7 +34,6 @@
 Query::Query()
     : _ensureSameSourceLayerInNLR( Options::get()->getSymbolicBoundTighteningType() ==
                                    SymbolicBoundTighteningType::DEEP_POLY )
-    , _isQueryWithDisjunction( false )
     , _networkLevelReasoner( NULL )
 {
 }
@@ -623,12 +622,6 @@ void Query::markOutputVariable( unsigned variable, unsigned outputIndex )
 {
     _variableToOutputIndex[variable] = outputIndex;
     _outputIndexToVariable[outputIndex] = variable;
-}
-
-void Query::unmarkOutputVariables()
-{
-    _variableToOutputIndex.clear();
-    _outputIndexToVariable.clear();
 }
 
 unsigned Query::inputVariableByIndex( unsigned index ) const
@@ -2055,24 +2048,4 @@ bool Query::constructSoftmaxLayer( NLR::NetworkLevelReasoner *nlr,
 
     INPUT_QUERY_LOG( "\tSuccessful!" );
     return true;
-}
-
-void Query::addOutputConstraint( const Equation &equation )
-{
-    _outputConstraints.append( equation );
-}
-
-const List<Equation> &Query::getOutputConstraints() const
-{
-    return _outputConstraints;
-}
-
-bool Query::isQueryWithDisjunction() const
-{
-    return _isQueryWithDisjunction;
-}
-
-void Query::markQueryWithDisjunction()
-{
-    _isQueryWithDisjunction = true;
 }

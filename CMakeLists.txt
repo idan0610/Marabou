@@ -22,7 +22,6 @@ option(RUN_PYTHON_TEST "Run Python API tests if building with Python" OFF)
 option(ENABLE_GUROBI "Enable use the Gurobi optimizer" OFF)
 option(ENABLE_OPENBLAS "Do symbolic bound tighting using blas" ON) # Not available on Windows
 option(CODE_COVERAGE "Add code coverage" OFF)  # Available only in debug mode
-option(BUILD_CADICAL "Build the CaDiCaL SAT solver for CDCL solving" ON)
 
 ###################
 ## Git variables ##
@@ -208,30 +207,6 @@ if (NOT MSVC AND ${ENABLE_OPENBLAS})
     set_target_properties(${OPENBLAS_LIB} PROPERTIES IMPORTED_LOCATION ${OPENBLAS_DIR}/installed/lib/libopenblas.a)
     list(APPEND LIBS ${OPENBLAS_LIB})
     target_include_directories(${OPENBLAS_LIB} INTERFACE ${OPENBLAS_DIR}/installed/include)
-endif ()
-
-##########
-## CaDiCaL ##
-##########
-
-if (BUILD_CADICAL)
-    message(STATUS "Using CaDiCaL for CDCL solving")
-    if (NOT CADICAL_DIR)
-        set(CADICAL_DIR "${TOOLS_DIR}/cadical")
-    endif ()
-    add_compile_definitions(BUILD_CADICAL)
-
-    if (NOT EXISTS "${CADICAL_DIR}")
-        message(STATUS "Building CaDiCaL SAT Solver")
-        execute_process(COMMAND ${TOOLS_DIR}/download_cadical.sh)
-    endif ()
-
-    set(CADICAL_LIB cadical)
-    add_library(${CADICAL_LIB} SHARED IMPORTED)
-    set_property(TARGET ${CADICAL_LIB} PROPERTY POSITION_INDEPENDENT_CODE ON)
-    set_target_properties(${CADICAL_LIB} PROPERTIES IMPORTED_LOCATION ${CADICAL_DIR}/build/libcadical.a)
-    target_include_directories(${CADICAL_LIB} INTERFACE ${CADICAL_DIR}/src)
-    list(APPEND LIBS ${CADICAL_LIB})
 endif ()
 
 ###########

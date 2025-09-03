@@ -83,7 +83,7 @@ void DnCManager::dncSolve( WorkerQueue *workload,
 
 DnCManager::DnCManager( IQuery *inputQuery )
     : _baseQuery( inputQuery )
-    , _exitCode( ExitCode::NOT_DONE )
+    , _exitCode( DnCManager::NOT_DONE )
     , _workload( NULL )
     , _timeoutReached( false )
     , _numUnsolvedSubQueries( 0 )
@@ -137,7 +137,7 @@ void DnCManager::solve()
     // Preprocess the input query and create an engine for each of the threads
     if ( !createEngines( numWorkers ) )
     {
-        _exitCode = ExitCode::UNSAT;
+        _exitCode = DnCManager::UNSAT;
         return;
     }
 
@@ -244,7 +244,7 @@ void DnCManager::solve()
     return;
 }
 
-ExitCode DnCManager::getExitCode() const
+DnCManager::DnCExitCode DnCManager::getExitCode() const
 {
     return _exitCode;
 }
@@ -256,32 +256,32 @@ void DnCManager::updateDnCExitCode()
     bool hasQuitRequested = false;
     for ( auto &engine : _engines )
     {
-        ExitCode result = engine->getExitCode();
-        if ( result == ExitCode::SAT )
+        Engine::ExitCode result = engine->getExitCode();
+        if ( result == Engine::SAT )
         {
             _engineWithSATAssignment = engine;
             hasSat = true;
             break;
         }
-        else if ( result == ExitCode::ERROR )
+        else if ( result == Engine::ERROR )
             hasError = true;
-        else if ( result == ExitCode::QUIT_REQUESTED )
+        else if ( result == Engine::QUIT_REQUESTED )
             hasQuitRequested = true;
     }
     if ( hasSat )
-        _exitCode = ExitCode::SAT;
+        _exitCode = DnCManager::SAT;
     else if ( _timeoutReached )
-        _exitCode = ExitCode::TIMEOUT;
+        _exitCode = DnCManager::TIMEOUT;
     else if ( _numUnsolvedSubQueries.load() <= 0 )
-        _exitCode = ExitCode::UNSAT;
+        _exitCode = DnCManager::UNSAT;
     else if ( hasQuitRequested )
-        _exitCode = ExitCode::QUIT_REQUESTED;
+        _exitCode = DnCManager::QUIT_REQUESTED;
     else if ( hasError )
-        _exitCode = ExitCode::ERROR;
+        _exitCode = DnCManager::ERROR;
     else
     {
         ASSERT( false ); // This should never happen
-        _exitCode = ExitCode::NOT_DONE;
+        _exitCode = DnCManager::NOT_DONE;
     }
 }
 
@@ -289,17 +289,17 @@ String DnCManager::getResultString()
 {
     switch ( _exitCode )
     {
-    case ExitCode::SAT:
+    case DnCManager::SAT:
         return "sat";
-    case ExitCode::UNSAT:
+    case DnCManager::UNSAT:
         return "unsat";
-    case ExitCode::ERROR:
+    case DnCManager::ERROR:
         return "ERROR";
-    case ExitCode::NOT_DONE:
+    case DnCManager::NOT_DONE:
         return "NOT_DONE";
-    case ExitCode::QUIT_REQUESTED:
+    case DnCManager::QUIT_REQUESTED:
         return "QUIT_REQUESTED";
-    case ExitCode::TIMEOUT:
+    case DnCManager::TIMEOUT:
         return "TIMEOUT";
     default:
         ASSERT( false );
@@ -325,7 +325,7 @@ void DnCManager::printResult()
     std::cout << std::endl;
     switch ( _exitCode )
     {
-    case ExitCode::SAT:
+    case DnCManager::SAT:
     {
         std::cout << "sat\n" << std::endl;
 
@@ -352,19 +352,19 @@ void DnCManager::printResult()
         printf( "\n" );
         break;
     }
-    case ExitCode::UNSAT:
+    case DnCManager::UNSAT:
         std::cout << "unsat" << std::endl;
         break;
-    case ExitCode::ERROR:
+    case DnCManager::ERROR:
         std::cout << "ERROR" << std::endl;
         break;
-    case ExitCode::NOT_DONE:
+    case DnCManager::NOT_DONE:
         std::cout << "NOT_DONE" << std::endl;
         break;
-    case ExitCode::QUIT_REQUESTED:
+    case DnCManager::QUIT_REQUESTED:
         std::cout << "QUIT_REQUESTED" << std::endl;
         break;
-    case ExitCode::TIMEOUT:
+    case DnCManager::TIMEOUT:
         std::cout << "TIMEOUT" << std::endl;
         break;
     default:

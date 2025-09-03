@@ -249,26 +249,6 @@ public:
                  : static_cast<unsigned>( phase ) - MAX_VARIABLE_TO_PHASE_OFFSET;
     }
 
-#ifdef BUILD_CADICAL
-    /*
-     Creates boolean abstraction of phases and adds abstracted variables to the SAT solver
-    */
-    void
-    booleanAbstraction( Map<unsigned int, PiecewiseLinearConstraint *> &cadicalVarToPlc ) override;
-
-    /*
-     Returns a literal representing a boolean propagation
-     Returns 0 if no propagation can be deduced
-    */
-    int propagatePhaseAsLit() const override;
-
-    /*
-     Returns a phase status corresponding to a literal,
-     assuming the literal is part of the boolean abstraction
-    */
-    void propagateLitAsSplit( int lit ) override;
-#endif
-
 private:
     unsigned _f;
     Set<unsigned> _elements;
@@ -299,6 +279,12 @@ private:
     double _maxValueOfEliminatedPhases;
 
     /*
+      Returns the phase where variable argMax has maximum value.
+    */
+    PiecewiseLinearCaseSplit getSplit( unsigned argMax ) const;
+
+
+    /*
       Eliminate the case corresponding to the given input variable to Max.
     */
     void eliminateCase( unsigned variable );
@@ -316,9 +302,6 @@ private:
       Apply tightenings in the list, discovered by getEntailedTightenings
     */
     void applyTightenings( const List<Tightening> &tightenings );
-
-    Map<unsigned, unsigned> _elementsToCadicalVars;
-    Map<unsigned, unsigned> _cadicalVarsToElements;
 };
 
 #endif // __MaxConstraint_h__

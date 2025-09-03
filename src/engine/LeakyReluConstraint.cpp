@@ -14,9 +14,6 @@
 
 #include "LeakyReluConstraint.h"
 
-#ifdef BUILD_CADICAL
-#include "CdclCore.h"
-#endif
 #include "Debug.h"
 #include "DivideStrategy.h"
 #include "FloatUtils.h"
@@ -153,11 +150,6 @@ void LeakyReluConstraint::checkIfLowerBoundUpdateFixesPhase( unsigned variable, 
         else if ( variable == _inactiveAux && FloatUtils::isPositive( bound ) )
             setPhaseStatus( RELU_PHASE_ACTIVE );
     }
-
-#ifdef BUILD_CADICAL
-    if ( !_cdclVars.empty() && phaseFixed() && isActive() )
-        _cdclCore->addLiteralToPropagate( propagatePhaseAsLit() );
-#endif
 }
 
 void LeakyReluConstraint::checkIfUpperBoundUpdateFixesPhase( unsigned variable, double bound )
@@ -173,11 +165,6 @@ void LeakyReluConstraint::checkIfUpperBoundUpdateFixesPhase( unsigned variable, 
         else if ( variable == _inactiveAux && FloatUtils::isZero( bound ) )
             setPhaseStatus( RELU_PHASE_INACTIVE );
     }
-
-#ifdef BUILD_CADICAL
-    if ( !_cdclVars.empty() && phaseFixed() && isActive() )
-        _cdclCore->addLiteralToPropagate( propagatePhaseAsLit() );
-#endif
 }
 
 void LeakyReluConstraint::notifyLowerBound( unsigned variable, double bound )
@@ -1051,97 +1038,3 @@ void LeakyReluConstraint::createInactiveTighteningRow()
     _inactiveTighteningRow->_row[2] = TableauRow::Entry( _tableauAuxVars.back(), 1 );
     _inactiveTighteningRow->_scalar = 0;
 }
-
-#ifdef BUILD_CADICAL
-void LeakyReluConstraint::booleanAbstraction(
-    Map<unsigned int, PiecewiseLinearConstraint *> &cadicalVarToPlc )
-{
-    unsigned int idx = cadicalVarToPlc.size();
-    _cdclVars.append( idx );
-    cadicalVarToPlc.insert( idx, this );
-}
-
-int LeakyReluConstraint::propagatePhaseAsLit() const
-{
-    ASSERT( _cdclVars.size() == 1 )
-    if ( getPhaseStatus() == RELU_PHASE_ACTIVE )
-        return _cdclVars.back();
-    else if ( getPhaseStatus() == RELU_PHASE_INACTIVE )
-        return -_cdclVars.back();
-    else
-        return 0;
-}
-
-void LeakyReluConstraint::propagateLitAsSplit( int lit )
-{
-    ASSERT( _cdclVars.exists( FloatUtils::abs( lit ) ) );
-    setActiveConstraint( false );
-
-    if ( lit > 0 )
-        setPhaseStatus( RELU_PHASE_ACTIVE );
-    else
-        setPhaseStatus( RELU_PHASE_INACTIVE );
-}
-
-int LeakyReluConstraint::getLiteralForDecision() const
-{
-    ASSERT( getPhaseStatus() == PHASE_NOT_FIXED );
-
-    if ( _direction == RELU_PHASE_INACTIVE )
-        return -(int)_cdclVars.front();
-    if ( _direction == RELU_PHASE_ACTIVE )
-        return (int)_cdclVars.front();
-
-    if ( existsAssignment( _f ) )
-        if ( FloatUtils::isPositive( getAssignment( _f ) ) )
-            return (int)_cdclVars.front();
-        else
-            return -(int)_cdclVars.front();
-    else
-        return -(int)_cdclVars.front();
-}
-
-bool LeakyReluConstraint::isBoundFixingPhase( unsigned int var,
-                                              double bound,
-                                              Tightening::BoundType boundType ) const
-{
-    if ( getPhaseStatus() == RELU_PHASE_ACTIVE )
-    {
-        if ( var == _b && boundType == Tightening::LB && !FloatUtils::isNegative( bound ) )
-            return true;
-
-        if ( var == _f && boundType == Tightening::LB && !FloatUtils::isNegative( bound ) )
-            return true;
-
-        if ( _auxVarsInUse )
-        {
-            if ( var == _activeAux && boundType == Tightening::UB && FloatUtils::isZero( bound ) )
-                return true;
-
-            if ( var == _inactiveAux && boundType == Tightening::LB &&
-                 FloatUtils::isPositive( bound ) )
-                return true;
-        }
-    }
-    else if ( getPhaseStatus() == RELU_PHASE_INACTIVE )
-    {
-        if ( var == _b && boundType == Tightening::UB && FloatUtils::isNegative( bound ) )
-            return true;
-
-        if ( var == _f && boundType == Tightening::UB && FloatUtils::isNegative( bound ) )
-            return true;
-
-        if ( _auxVarsInUse )
-        {
-            if ( var == _activeAux && boundType == Tightening::LB &&
-                 FloatUtils::isPositive( bound ) )
-                return true;
-
-            if ( var == _inactiveAux && boundType == Tightening::UB && FloatUtils::isZero( bound ) )
-                return true;
-        }
-    }
-
-    return false;
-}
-#endif

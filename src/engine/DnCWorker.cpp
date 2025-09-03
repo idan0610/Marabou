@@ -104,7 +104,7 @@ void DnCWorker::popOneSubQueryAndSolve( bool restoreTreeStates )
         bool fullSolveNeeded = true; // denotes whether we need to solve the subquery
         if ( restoreTreeStates && searchTreeState )
             fullSolveNeeded = _engine->restoreSearchTreeState( *searchTreeState );
-        ExitCode result = ExitCode::NOT_DONE;
+        IEngine::ExitCode result = IEngine::NOT_DONE;
         if ( fullSolveNeeded )
         {
             _engine->solve( timeoutInSeconds );
@@ -113,13 +113,13 @@ void DnCWorker::popOneSubQueryAndSolve( bool restoreTreeStates )
         else
         {
             // UNSAT is proven when replaying stack-entries
-            result = ExitCode::UNSAT;
+            result = IEngine::UNSAT;
         }
 
         if ( _verbosity > 0 )
             printProgress( queryId, result );
         // Switch on the result
-        if ( result == ExitCode::UNSAT )
+        if ( result == IEngine::UNSAT )
         {
             // If UNSAT, continue to solve
             *_numUnsolvedSubQueries -= 1;
@@ -127,7 +127,7 @@ void DnCWorker::popOneSubQueryAndSolve( bool restoreTreeStates )
                 *_shouldQuitSolving = true;
             delete subQuery;
         }
-        else if ( result == ExitCode::TIMEOUT )
+        else if ( result == IEngine::TIMEOUT )
         {
             // If TIMEOUT, split the current input region and add the
             // new subQueries to the current queue
@@ -170,7 +170,7 @@ void DnCWorker::popOneSubQueryAndSolve( bool restoreTreeStates )
             *_numUnsolvedSubQueries -= 1;
             delete subQuery;
         }
-        else if ( result == ExitCode::QUIT_REQUESTED )
+        else if ( result == IEngine::QUIT_REQUESTED )
         {
             // If engine was asked to quit, quit
             std::cout << "Quit requested by manager!" << std::endl;
@@ -183,13 +183,13 @@ void DnCWorker::popOneSubQueryAndSolve( bool restoreTreeStates )
             // TIMEOUT. This way, the DnCManager will kill all the DnCWorkers.
 
             *_shouldQuitSolving = true;
-            if ( result == ExitCode::SAT )
+            if ( result == IEngine::SAT )
             {
                 // case SAT
                 *_numUnsolvedSubQueries -= 1;
                 delete subQuery;
             }
-            else if ( result == ExitCode::ERROR )
+            else if ( result == IEngine::ERROR )
             {
                 // case ERROR
                 std::cout << "Error!" << std::endl;
@@ -211,7 +211,7 @@ void DnCWorker::popOneSubQueryAndSolve( bool restoreTreeStates )
     }
 }
 
-void DnCWorker::printProgress( String queryId, ExitCode result ) const
+void DnCWorker::printProgress( String queryId, IEngine::ExitCode result ) const
 {
     printf( "Worker %d: Query %s %s, %d tasks remaining\n",
             _threadId,
@@ -220,19 +220,19 @@ void DnCWorker::printProgress( String queryId, ExitCode result ) const
             _numUnsolvedSubQueries->load() );
 }
 
-String DnCWorker::exitCodeToString( ExitCode result )
+String DnCWorker::exitCodeToString( IEngine::ExitCode result )
 {
     switch ( result )
     {
-    case ExitCode::UNSAT:
+    case IEngine::UNSAT:
         return "unsat";
-    case ExitCode::SAT:
+    case IEngine::SAT:
         return "sat";
-    case ExitCode::ERROR:
+    case IEngine::ERROR:
         return "ERROR";
-    case ExitCode::TIMEOUT:
+    case IEngine::TIMEOUT:
         return "TIMEOUT";
-    case ExitCode::QUIT_REQUESTED:
+    case IEngine::QUIT_REQUESTED:
         return "QUIT_REQUESTED";
     default:
         ASSERT( false );

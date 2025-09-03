@@ -177,19 +177,6 @@ public:
         {
         }
 
-        void
-        booleanAbstraction( Map<unsigned int, PiecewiseLinearConstraint *> & /*cadicalVarToPlc*/ )
-        {
-        }
-
-        int propagatePhaseAsLit() const
-        {
-            return 0;
-        }
-
-        void propagateLitAsSplit( int /*lit*/ )
-        {
-        }
     };
 
     void setUp()

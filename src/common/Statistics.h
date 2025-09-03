@@ -36,15 +36,9 @@ public:
         // Precision restoration
         NUM_PRECISION_RESTORATIONS,
 
-        // Current and max depth of the search TREE
+        // Current and max stack depth in the Search Tree Handler
         CURRENT_DECISION_LEVEL,
         MAX_DECISION_LEVEL,
-
-        // Number of time the depth of the search tree was changed
-        NUM_DECISION_LEVELS,
-
-        // Sum of all depths of the search tree
-        SUM_DECISION_LEVELS,
 
         // Total number of splits so far
         NUM_SPLITS,
@@ -81,22 +75,6 @@ public:
 
         // 1 if returned UNSAT and proof was certified by proof checker, 0 otherwise.
         CERTIFIED_UNSAT,
-
-        // Maximal jump size across all backjumps performed
-        MAX_BACKJUMP,
-
-        // Number of backjumps performed
-        NUM_BACKJUMPS,
-
-        // Sum of all jump sizes across all backjumps
-        SUM_BACKJUMPS,
-
-        // Number of decisions performed by Cadical and Marabou
-        NUM_SAT_SOLVER_DECISIONS,
-        NUM_MARABOU_DECISIONS,
-
-        // Number of restarts of the SAT solver
-        NUM_RESTARTS
     };
 
     enum StatisticsLongAttribute {
@@ -211,24 +189,8 @@ public:
         // Total amount of time spent applying previously stored bound tightenings
         TOTAL_TIME_APPLYING_STORED_TIGHTENINGS_MICRO,
 
-        // Total amount of time spent within the Search Tree Handler
+        // Total amount of time spent within the search tree core
         TOTAL_TIME_SEARCH_TREE_HANDLER_MICRO,
-
-        // Total amount of time spent within the CDCL core as a result of CaDiCal callbacks
-        TOTAL_TIME_CDCL_CORE_CALLBACKS_MICRO,
-
-        // Total amount of time spent within each one of CaDiCal callbacks in SearchTreeHandler
-        TOTAL_TIME_CDCL_CORE_NOTIFY_ASSIGNMENT_MICRO,
-        TOTAL_TIME_CDCL_CORE_NOTIFY_NEW_DECISION_LEVEL_MICRO,
-        TOTAL_TIME_CDCL_CORE_NOTIFY_BACKTRACK_MICRO,
-        TOTAL_TIME_CDCL_CORE_NOTIFY_FIXED_ASSIGNMENT_MICRO,
-        TOTAL_TIME_CDCL_CORE_CB_DECIDE_MICRO,
-        TOTAL_TIME_CDCL_CORE_CB_PROPAGATE_MICRO,
-        TOTAL_TIME_CDCL_CORE_CB_ADD_REASON_CLAUSE_LIT_MICRO,
-        TOTAL_TIME_CDCL_CORE_CB_ADD_EXTERNAL_CLAUSE_LIT_MICRO,
-
-        // Total amount of time spent within the CDCL core from Engine main loop
-        TOTAL_TIME_CDCL_CORE_MAIN_LOOP_MICRO,
 
         // Total time heuristically updating the SoI phase pattern
         TOTAL_TIME_UPDATING_SOI_PHASE_PATTERN_MICRO,

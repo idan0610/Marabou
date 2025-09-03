@@ -55,5 +55,3 @@ add_subdirectory(query_loader)
 add_subdirectory(nlr)
 add_subdirectory(proofs)
 add_subdirectory(cegar)
-add_subdirectory(cdcl)
-

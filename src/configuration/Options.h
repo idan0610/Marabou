@@ -27,7 +27,6 @@
 #include "SoISearchStrategy.h"
 #include "SoftmaxBoundType.h"
 #include "SymbolicBoundTighteningType.h"
-#include "Vector.h"
 #include "boost/program_options.hpp"
 
 /*
@@ -84,11 +83,6 @@ public:
         // logically-consecutive weighted sum layers into a single
         // weighted sum layer, to reduce the number of variables
         DO_NOT_MERGE_CONSECUTIVE_WEIGHTED_SUM_LAYERS,
-
-#ifdef BUILD_CADICAL
-        // Switch the solving procedure to be CDCL-based
-        SOLVE_WITH_CDCL,
-#endif
     };
 
     enum IntOptions {
@@ -105,8 +99,6 @@ public:
         TIMEOUT,
 
         CONSTRAINT_VIOLATION_THRESHOLD,
-
-        VSIDS_DECAY_THRESHOLD,
 
         // The number of rejected phase pattern proposal allowed before
         // splitting at a search state.
@@ -163,10 +155,7 @@ public:
         SOI_INITIALIZATION_STRATEGY,
 
         // The procedure/solver for solving the LP
-        LP_SOLVER,
-
-        NAP_EXTERNAL_CLAUSE_FILE_PATH, // TODO: delete or keep for artifact
-        NAP_EXTERNAL_CLAUSE_FILE_PATH2 // TODO: delete or keep for artifact
+        LP_SOLVER
     };
 
     /*

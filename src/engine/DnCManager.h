@@ -32,6 +32,16 @@ class Query;
 class DnCManager
 {
 public:
+    enum DnCExitCode {
+        UNSAT = 0,
+        SAT = 1,
+        ERROR = 2,
+        TIMEOUT = 3,
+        QUIT_REQUESTED = 4,
+
+        NOT_DONE = 999,
+    };
+
     DnCManager( IQuery *inputQuery );
 
     ~DnCManager();
@@ -46,7 +56,7 @@ public:
     /*
       Return the DnCExitCode of the DnCManager
     */
-    ExitCode getExitCode() const;
+    DnCExitCode getExitCode() const;
 
     /*
       Get the string representation of the exitcode
@@ -135,7 +145,7 @@ private:
     /*
       The exit code of the DnCManager.
     */
-    ExitCode _exitCode;
+    DnCExitCode _exitCode;
 
     /*
       Set of subQueries to be solved by workers

@@ -25,7 +25,6 @@
 #include "SearchTreeState.h"
 #include "Stack.h"
 #include "Statistics.h"
-#include "TimeoutException.h"
 #include "context/cdhashmap.h"
 #include "context/cdhashset.h"
 #include "context/context.h"
@@ -60,8 +59,7 @@ public:
     /*
       Initialize the score tracker with the given list of pl constraints.
     */
-    void initializeScoreTrackerIfNeeded( const List<PiecewiseLinearConstraint *> &plConstraints,
-                                         CdclCore *cdclCore = nullptr );
+    void initializeScoreTrackerIfNeeded( const List<PiecewiseLinearConstraint *> &plConstraints );
 
     /*
       Inform the Search Tree handler that a SoI phase pattern proposal is rejected.

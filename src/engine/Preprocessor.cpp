@@ -11,7 +11,7 @@
  **
  ** [[ Add lengthier description here ]]
 
- **/
+**/
 
 #include "Preprocessor.h"
 
@@ -62,13 +62,6 @@ std::unique_ptr<Query> Preprocessor::preprocess( const IQuery &query,
                                                  bool attemptVariableElimination )
 {
     _preprocessed = std::unique_ptr<Query>( query.generateQuery() );
-
-    /*
-      First, convert this input query into an equivalent reachability query, if possible.
-      A reachability query is a query with only one output variable, and the specification indicates
-      that the single output variable's assignment should be non-negative.
-     */
-    convertToReachabilityQuery();
 
     informConstraintsOfInitialBounds( *_preprocessed );
 
@@ -921,13 +914,13 @@ void Preprocessor::eliminateVariables()
     }
 
     // Let the remaining piecewise-lienar constraints know of any changes in indices.
-    for ( const auto &constraint : constraints )
+    for ( const auto &plc : constraints )
     {
-        List<unsigned> participatingVariables = constraint->getParticipatingVariables();
+        List<unsigned> participatingVariables = plc->getParticipatingVariables();
         for ( unsigned variable : participatingVariables )
         {
             if ( _oldIndexToNewIndex.at( variable ) != variable )
-                constraint->updateVariableIndex( variable, _oldIndexToNewIndex.at( variable ) );
+                plc->updateVariableIndex( variable, _oldIndexToNewIndex.at( variable ) );
         }
     }
 
@@ -964,13 +957,13 @@ void Preprocessor::eliminateVariables()
     }
 
     // Let the remaining nonlinear constraints know of any changes in indices.
-    for ( const auto &nlConstraint : nlConstraints )
+    for ( const auto &nlc : nlConstraints )
     {
-        List<unsigned> participatingVariables = nlConstraint->getParticipatingVariables();
+        List<unsigned> participatingVariables = nlc->getParticipatingVariables();
         for ( unsigned variable : participatingVariables )
         {
             if ( _oldIndexToNewIndex.at( variable ) != variable )
-                nlConstraint->updateVariableIndex( variable, _oldIndexToNewIndex.at( variable ) );
+                nlc->updateVariableIndex( variable, _oldIndexToNewIndex.at( variable ) );
         }
     }
 
@@ -1146,96 +1139,4 @@ void Preprocessor::informConstraintsOfInitialBounds( Query &query )
             nlConstraint->notifyUpperBound( variable, query.getUpperBound( variable ) );
         }
     }
-}
-
-void Preprocessor::convertToReachabilityQuery()
-{
-    if ( !GlobalConfiguration::CONVERT_VERIFICATION_QUERY_INTO_REACHABILITY_QUERY ||
-         _preprocessed->isQueryWithDisjunction() )
-        return;
-
-    List<unsigned> newVariables;
-    //    const Map<unsigned, double> &lowerBounds = _preprocessed->getLowerBounds();
-    //    const Map<unsigned, double> &upperBounds = _preprocessed->getUpperBounds();
-    //
-    //    // Add new variables and equations for output bounds:
-    //    for ( unsigned outputVariable : _preprocessed->getOutputVariables() )
-    //    {
-    //        if ( lowerBounds.exists( outputVariable ) &&
-    //             FloatUtils::isFinite( lowerBounds[outputVariable] ) )
-    //        {
-    //            unsigned newVariable = _preprocessed->getNewVariable();
-    //            newVariables.append( newVariable );
-    //            Equation newEquation;
-    //            newEquation.addAddend( 1, outputVariable );
-    //            newEquation.addAddend( 1, newVariable );
-    //            newEquation.setScalar( lowerBounds[outputVariable] );
-    //            _preprocessed->addEquation( newEquation );
-    //        }
-    //
-    //        if ( upperBounds.exists( outputVariable ) &&
-    //             FloatUtils::isFinite( upperBounds[outputVariable] ) )
-    //        {
-    //            unsigned newVariable = _preprocessed->getNewVariable();
-    //            newVariables.append( newVariable );
-    //            Equation newEquation;
-    //            newEquation.addAddend( -1, outputVariable );
-    //            newEquation.addAddend( 1, newVariable );
-    //            newEquation.setScalar( -upperBounds[outputVariable] );
-    //            _preprocessed->addEquation( newEquation );
-    //        }
-    //    }
-
-    // Add new variables and equations for output constraints
-    for ( const Equation &equation : _preprocessed->getOutputConstraints() )
-    {
-        bool isTypeEq = ( equation._type == Equation::EQ );
-        if ( equation._type == Equation::GE || isTypeEq )
-        {
-            unsigned newVariable = _preprocessed->getNewVariable();
-            newVariables.append( newVariable );
-            Equation newEquation;
-            for ( const Equation::Addend addend : equation._addends )
-                newEquation.addAddend( addend._coefficient, addend._variable );
-            newEquation.addAddend( 1, newVariable );
-            newEquation.setScalar( equation._scalar );
-            _preprocessed->addEquation( newEquation );
-        }
-
-        if ( equation._type == Equation::LE || isTypeEq )
-        {
-            unsigned newVariable = _preprocessed->getNewVariable();
-            newVariables.append( newVariable );
-            Equation newEquation;
-            for ( const Equation::Addend addend : equation._addends )
-                newEquation.addAddend( -addend._coefficient, addend._variable );
-            newEquation.addAddend( 1, newVariable );
-            newEquation.setScalar( -equation._scalar );
-            _preprocessed->addEquation( newEquation );
-        }
-    }
-
-    // Add new ReLU variables and constraint:
-    List<unsigned> newReluVariables;
-    for ( unsigned newVariable : newVariables )
-    {
-        unsigned newReluVariable = _preprocessed->getNewVariable();
-        newReluVariables.append( newReluVariable );
-        ReluConstraint *newReluConstraint = new ReluConstraint( newVariable, newReluVariable );
-        _preprocessed->addPiecewiseLinearConstraint( newReluConstraint );
-    }
-
-    // Add new single output variable:
-    unsigned int newOutputVariable = _preprocessed->getNewVariable();
-
-    _preprocessed->unmarkOutputVariables();
-    _preprocessed->markOutputVariable( newOutputVariable, 0 );
-    _preprocessed->setLowerBound( newOutputVariable, 0 );
-
-    Equation newOutputEquation;
-    newOutputEquation.addAddend( 1, newOutputVariable );
-    for ( unsigned newReluVariable : newReluVariables )
-        newOutputEquation.addAddend( 1, newReluVariable );
-    newOutputEquation.setScalar( 0 );
-    _preprocessed->addEquation( newOutputEquation );
 }

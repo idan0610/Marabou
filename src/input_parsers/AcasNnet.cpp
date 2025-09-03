@@ -45,63 +45,63 @@ AcasNnet *load_network( const char *filename )
     line = fgets( buffer, bufferSize, fstream );
     while ( strstr( line, "//" ) != NULL )
         line = fgets( buffer, bufferSize, fstream ); // skip header lines
-    record = strtok( line, ",\r\n" );
+    record = strtok( line, ",\n" );
     nnet->numLayers = atoi( record );
-    nnet->inputSize = atoi( strtok( NULL, ",\r\n" ) );
-    nnet->outputSize = atoi( strtok( NULL, ",\r\n" ) );
-    nnet->maxLayerSize = atoi( strtok( NULL, ",\r\n" ) );
+    nnet->inputSize = atoi( strtok( NULL, ",\n" ) );
+    nnet->outputSize = atoi( strtok( NULL, ",\n" ) );
+    nnet->maxLayerSize = atoi( strtok( NULL, ",\n" ) );
 
     // Allocate space for and read values of the array members of the network
     nnet->layerSizes = new int[( ( ( nnet->numLayers ) + 1 ) )];
     line = fgets( buffer, bufferSize, fstream );
-    record = strtok( line, ",\r\n" );
+    record = strtok( line, ",\n" );
     for ( i = 0; i < ( ( nnet->numLayers ) + 1 ); i++ )
     {
         nnet->layerSizes[i] = atoi( record );
-        record = strtok( NULL, ",\r\n" );
+        record = strtok( NULL, ",\n" );
     }
 
     // Load the symmetric paramter
     line = fgets( buffer, bufferSize, fstream );
-    record = strtok( line, ",\r\n" );
+    record = strtok( line, ",\n" );
     nnet->symmetric = atoi( record );
 
     // Load Min and Max values of inputs
     nnet->mins = new double[( nnet->inputSize )];
     line = fgets( buffer, bufferSize, fstream );
-    record = strtok( line, ",\r\n" );
+    record = strtok( line, ",\n" );
     for ( i = 0; i < ( nnet->inputSize ); i++ )
     {
         nnet->mins[i] = atof( record );
-        record = strtok( NULL, ",\r\n" );
+        record = strtok( NULL, ",\n" );
     }
 
     nnet->maxes = new double[( nnet->inputSize )];
     line = fgets( buffer, bufferSize, fstream );
-    record = strtok( line, ",\r\n" );
+    record = strtok( line, ",\n" );
     for ( i = 0; i < ( nnet->inputSize ); i++ )
     {
         nnet->maxes[i] = atof( record );
-        record = strtok( NULL, ",\r\n" );
+        record = strtok( NULL, ",\n" );
     }
 
     // Load Mean and Range of inputs
     nnet->means = new double[( ( ( nnet->inputSize ) + 1 ) )];
     line = fgets( buffer, bufferSize, fstream );
-    record = strtok( line, ",\r\n" );
+    record = strtok( line, ",\n" );
     for ( i = 0; i < ( ( nnet->inputSize ) + 1 ); i++ )
     {
         nnet->means[i] = atof( record );
-        record = strtok( NULL, ",\r\n" );
+        record = strtok( NULL, ",\n" );
     }
 
     nnet->ranges = new double[( ( ( nnet->inputSize ) + 1 ) )];
     line = fgets( buffer, bufferSize, fstream );
-    record = strtok( line, ",\r\n" );
+    record = strtok( line, ",\n" );
     for ( i = 0; i < ( ( nnet->inputSize ) + 1 ); i++ )
     {
         nnet->ranges[i] = atof( record );
-        record = strtok( NULL, ",\r\n" );
+        record = strtok( NULL, ",\n" );
     }
 
     // Allocate space for matrix of Neural Network
@@ -151,11 +151,11 @@ AcasNnet *load_network( const char *filename )
             i = 0;
             j = 0;
         }
-        record = strtok( line, ",\r\n" );
+        record = strtok( line, ",\n" );
         while ( record != NULL )
         {
             nnet->matrix[layer][param][i][j++] = atof( record );
-            record = strtok( NULL, ",\r\n" );
+            record = strtok( NULL, ",\n" );
         }
         j = 0;
         i++;

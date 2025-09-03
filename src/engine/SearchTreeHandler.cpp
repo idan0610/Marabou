@@ -85,10 +85,7 @@ void SearchTreeHandler::reportViolatedConstraint( PiecewiseLinearConstraint *con
     if ( _constraintToViolationCount[constraint] >= _constraintViolationThreshold )
     {
         _needToSplit = true;
-        if ( _engine->shouldSolveWithCDCL() )
-            ASSERT( !constraint->phaseFixed() );
-        if ( !_engine->shouldSolveWithCDCL() && !pickSplitPLConstraint() )
-
+        if ( !pickSplitPLConstraint() )
             // If pickSplitConstraint failed to pick one, use the native
             // relu-violation based splitting heuristic.
             _constraintForSplitting = constraint;
@@ -104,17 +101,12 @@ unsigned SearchTreeHandler::getViolationCounts( PiecewiseLinearConstraint *const
 }
 
 void SearchTreeHandler::initializeScoreTrackerIfNeeded(
-    const List<PiecewiseLinearConstraint *> &plConstraints,
-    CdclCore *cdclCore )
+    const List<PiecewiseLinearConstraint *> &plConstraints )
 {
     if ( GlobalConfiguration::USE_DEEPSOI_LOCAL_SEARCH )
     {
         _scoreTracker = std::unique_ptr<PseudoImpactTracker>( new PseudoImpactTracker() );
         _scoreTracker->initialize( plConstraints );
-#ifdef BUILD_CADICAL
-        if ( cdclCore )
-            cdclCore->initializeScoreTracker( _scoreTracker );
-#endif
 
         SEARCH_TREE_LOG( "\tTracking Pseudo Impact..." );
     }
@@ -399,10 +391,6 @@ void SearchTreeHandler::resetSplitConditions()
 {
     _constraintToViolationCount.clear();
     _numRejectedPhasePatternProposal = 0;
-#ifdef BUILD_CADICAL
-    if ( _engine->shouldSolveWithCDCL() )
-        _constraintForSplitting = NULL;
-#endif
     _needToSplit = false;
 }
 

@@ -30,9 +30,8 @@ PiecewiseLinearConstraint::PiecewiseLinearConstraint()
     , _score( FloatUtils::negativeInfinity() )
     , _statistics( NULL )
     , _gurobi( NULL )
-    , _tableauAuxVars()
-    , _cdclVars()
     , _cdPhaseFixingEntry( nullptr )
+    , _tableauAuxVars()
 {
 }
 
@@ -49,9 +48,8 @@ PiecewiseLinearConstraint::PiecewiseLinearConstraint( unsigned numCases )
     , _score( FloatUtils::negativeInfinity() )
     , _statistics( NULL )
     , _gurobi( NULL )
-    , _tableauAuxVars()
-    , _cdclVars()
     , _cdPhaseFixingEntry( nullptr )
+    , _tableauAuxVars()
 {
 }
 

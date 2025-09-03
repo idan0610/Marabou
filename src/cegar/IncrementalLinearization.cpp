@@ -51,12 +51,6 @@ void IncrementalLinearization::solve()
       1. _inputQuery contains the assignment in the previous refinement round
       2. _timeoutInMicroSeconds is positive
     */
-    if ( !GlobalConfiguration::USE_DEEPSOI_LOCAL_SEARCH )
-    {
-        printf( "Using incremental linearization requires DeepSOI. Turning it on\n" );
-        GlobalConfiguration::USE_DEEPSOI_LOCAL_SEARCH = true;
-    }
-
     while ( true )
     {
         struct timespec start = TimeUtils::sampleMicro();
@@ -87,7 +81,7 @@ void IncrementalLinearization::solve()
             _engine->solve( timeoutInSeconds );
         }
 
-        if ( _engine->getExitCode() == ExitCode::UNKNOWN )
+        if ( _engine->getExitCode() == IEngine::UNKNOWN )
         {
             unsigned long long timePassed =
                 TimeUtils::timePassed( start, TimeUtils::sampleMicro() );

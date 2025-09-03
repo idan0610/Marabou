@@ -114,7 +114,7 @@ public:
       through the tableau. Can also do this until saturation, meaning that we
       continue until no new bounds are learned.
      */
-    unsigned examineInvertedBasisMatrix( bool untilSaturation );
+    void examineInvertedBasisMatrix( bool untilSaturation );
 
     /*
       Derive and enqueue new bounds for all varaibles, implicitly using the
@@ -123,7 +123,7 @@ public:
       is performed via FTRANs. Can also do this until saturation, meaning that we
       continue until no new bounds are learned.
      */
-    unsigned examineImplicitInvertedBasisMatrix( bool untilSaturation );
+    void examineImplicitInvertedBasisMatrix( bool untilSaturation );
 
     /*
       Derive and enqueue new bounds for all varaibles, using the
