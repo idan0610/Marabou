@@ -821,36 +821,15 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
 
     linearCombinationMpq( explainedRow, expl );
     bool isLemma = explainedVar >= 0;
-    bool reverseExplanation = false;
 
-    if ( isLemma &&
-         mpq_sgn( explainedRow[explainedVar] ) > 0 )
-    {
-        reverseExplanation = true;
-
-        // Negate the entire equality combination,
-        // not just the target coefficient.
-        for ( unsigned i = 0; i < _n; ++i )
-        {
-            mpq_neg( explainedRow[i], explainedRow[i] );
-        }
-    }
-
-    mpq_class lemmaMultiplier( 0 );
 
     if ( isLemma )
     {
-        lemmaMultiplier =
-            -mpq_class( explainedRow[explainedVar] );
-
-        ASSERT( lemmaMultiplier >= 0 );
-
+        mpq_class lemmaMultiplier( 1 );
         mpq_add(
             explainedRow[explainedVar],
             explainedRow[explainedVar],
             lemmaMultiplier.get_mpq_t() );
-
-        ASSERT( mpq_sgn( explainedRow[explainedVar] ) == 0 );
     }
 
     farkasClause = "";
@@ -859,7 +838,7 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
     List<Tightening> splitDeps;
 
     if ( isLemma )
-        farkasArgs += lemmaMultiplier.get_str() + " ";
+        farkasArgs += "1 ";
 
     // Collect participating equations and their arguments
     for ( const auto entry : expl )
@@ -868,8 +847,6 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
             farkasClause += String( "(not e" + std::to_string( entry._index ) ) + ")";
 
             mpq_class temp( isUpper ? -entry._value : entry._value );
-            if ( reverseExplanation )
-                temp = -temp;
             farkasArgs += temp.get_str() + " ";
             farkasParticipants += String( "e" + std::to_string( entry._index ) ) + " ";
         }
