@@ -504,63 +504,56 @@ unsigned RowBoundTightener::tightenOnSingleConstraintRow( unsigned row )
       bounds accordingly.
     */
 
-    double auxLb = b[row];
-    double auxUb = b[row];
-
-    // Now add ALL xi's
-    for ( unsigned i = 0; i < n; ++i )
+    for ( const auto &target : *sparseRow )
     {
-        if ( _ciSign[i] == NEGATIVE )
-        {
-            auxLb -= _ciTimesLb[i];
-            auxUb -= _ciTimesUb[i];
-        }
-        else
-        {
-            auxLb -= _ciTimesUb[i];
-            auxUb -= _ciTimesLb[i];
-        }
-    }
+        index = target._index;
+        ci = target._value;
 
-    double lowerBound;
-    double upperBound;
-
-    // Now consider each individual xi with non zero coefficient
-    for ( const auto &entry : *sparseRow )
-    {
-        index = entry._index;
-
-        lowerBound = auxLb;
-        upperBound = auxUb;
-
-        // Adjust the aux bounds to remove xi
-        if ( _ciSign[index] == NEGATIVE )
-        {
-            lowerBound += _ciTimesLb[index];
-            upperBound += _ciTimesUb[index];
-        }
-        else
-        {
-            lowerBound += _ciTimesUb[index];
-            upperBound += _ciTimesLb[index];
-        }
-
-        // Now divide everything by ci, switching signs if needed.
-        ci = entry._value;
-        if ( FloatUtils::lt( abs( ci ), GlobalConfiguration::MINIMAL_COEFFICIENT_FOR_TIGHTENING ) )
+        if ( std::abs( ci ) <
+             GlobalConfiguration::MINIMAL_COEFFICIENT_FOR_TIGHTENING )
             continue;
 
-        lowerBound = lowerBound / ci;
-        upperBound = upperBound / ci;
+        double numeratorLB = b[row];
+        double numeratorUB = b[row];
 
-        if ( _ciSign[index] == NEGATIVE )
+        for ( const auto &other : *sparseRow )
         {
-            double temp = upperBound;
-            upperBound = lowerBound;
-            lowerBound = temp;
+            if ( other._index == index )
+                continue;
+
+            const double c = other._value;
+            const double lb = getLowerBound( other._index );
+            const double ub = getUpperBound( other._index );
+
+            if ( c >= 0 )
+            {
+                numeratorLB -= c * ub;
+                numeratorUB -= c * lb;
+            }
+            else
+            {
+                numeratorLB -= c * lb;
+                numeratorUB -= c * ub;
+            }
         }
 
-        // If a tighter bound is found, store it
+        double lowerBound;
+        double upperBound;
+
+        if ( ci > 0 )
+        {
+            lowerBound = numeratorLB / ci;
+            upperBound = numeratorUB / ci;
+        }
+        else
+        {
+            lowerBound = numeratorUB / ci;
+            upperBound = numeratorLB / ci;
+        }
+
+        upperBound = std::nextafter( upperBound, std::numeric_limits<double>::infinity() );
+        lowerBound = std::nextafter( lowerBound, -std::numeric_limits<double>::infinity() );
+
         result += registerTighterLowerBound( index, lowerBound, *sparseRow );
         result += registerTighterUpperBound( index, upperBound, *sparseRow );
 

@@ -455,12 +455,17 @@ AletheProofWriter::getNegatedSplitsClause( const List<PiecewiseLinearCaseSplit> 
 
 String AletheProofWriter::getBoundAsClause( const Tightening &bound ) const
 {
+    mpq_class boundMpq (bound._value);
+    String boundStr = boundMpq.get_den().get_str() == "1"
+                            ? boundMpq.get_str() + ".0"
+                            : boundMpq.get_str();
+
     if ( bound._type == Tightening::UB )
         return String( "(<= x" + std::to_string( bound._variable ) + " " ) +
-               SmtLibWriter::signedValue( bound._value ) + ")";
+               boundStr + ")";
 
     return String( "(>= x" + std::to_string( bound._variable ) + " " ) +
-           SmtLibWriter::signedValue( bound._value ) + ")";
+           boundStr + ")";
 }
 
 String AletheProofWriter::getSplitAsClause( const PiecewiseLinearCaseSplit &split ) const
@@ -569,8 +574,7 @@ bool AletheProofWriter::writeReluLemma(
 #endif
 
     farkasClause = String( "(cl " ) + causeBound + farkasClause + ")";
-    farkasArgs = String( "(1 " ) + farkasArgs + "))\n";
-
+    farkasArgs = String( "(" ) + farkasArgs + "))\n";
     // Write la_generic\bounded_farkas for proving the causing bound, followed by a resolution step
     String ruleName = GlobalConfiguration::DEDICATED_ALETHE_RULE ? "bounded_farkas" : "la_generic";
     String laGeneric = String( "(step fl" ) + _queryId + "_" + id + " " + farkasClause + ":rule " +
@@ -805,20 +809,29 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
 
     linearCombinationMpq( explainedRow, expl );
     bool isLemma = explainedVar >= 0;
+
+    mpq_class lemmaMultiplier( 0 );
+
     if ( isLemma )
     {
-        mpq_t temp;
-        mpq_init( temp );
-        mpq_set_d( temp, 1 );
+        lemmaMultiplier =
+            -mpq_class( explainedRow[explainedVar] );
+
         mpq_add(
-            const_cast<mpq_ptr>( explainedRow[explainedVar] ), explainedRow[explainedVar], temp );
-        mpq_clear( temp );
+            explainedRow[explainedVar],
+            explainedRow[explainedVar],
+            lemmaMultiplier.get_mpq_t() );
+
+        ASSERT( mpq_sgn( explainedRow[explainedVar] ) == 0 );
     }
 
     farkasClause = "";
     farkasArgs = "";
     farkasParticipants = "";
     List<Tightening> splitDeps;
+
+    if ( isLemma )
+        farkasArgs += lemmaMultiplier.get_str() + " ";
 
     // Collect participating equations and their arguments
     for ( const auto entry : expl )
@@ -851,11 +864,14 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
                            mpq_cmp_si( explainedRow[i], -1, ALETHE_WRITER_PRECISION ) > 0;
 
         int lemId = gbEntry->lemma ? gbEntry->lemma->getId() : -1;
-        double bound = gbEntry->val;
+        mpq_class boundMpq (gbEntry->val);
+        String boundStr = boundMpq.get_den().get_str() == "1"
+                                ? boundMpq.get_str() + ".0"
+                                : boundMpq.get_str();
         String ineqString = useEntryUpperBound
                               ? String( "(not (<= x" + std::to_string( i ) + " " ) +
-                                    SmtLibWriter::signedValue( bound ) + ")) "
-                              : String( "(not (<= " ) + SmtLibWriter::signedValue( bound ) + " x" +
+                                    boundStr + ")) "
+                              : String( "(not (<= " ) + boundStr + " x" +
                                     std::to_string( i ) + ")) ";
         bool isLemmaIncluded = lemId >= 0 && gbEntry->lemma->getToCheck() &&
                                gbEntry->lemma->wasWritten() && ( !isLemma || deps.exists( lemId ) );
@@ -881,7 +897,7 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
                     splitDeps.append( dep );
         }
         else if ( useSplitBound && !overrideGmp )
-            splitDeps.append( Tightening( i, bound, boundType ) );
+            splitDeps.append( Tightening( i, gbEntry->val, boundType ) );
 
         // Add necessary and sufficient premises for any bound participating in the clauses
         if ( _cdclCore && useSplitBound && !overrideGmp )
@@ -889,11 +905,11 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
             int lit = _varToPlc[i]->propagatePhaseAsLit();
             String identifier = std::to_string( abs( lit ) );
 
-            if ( i == _varToPlc[i]->getParticipatingVariables().front() && bound == 0.0 &&
+            if ( i == _varToPlc[i]->getParticipatingVariables().front() && boundMpq == 0.0 &&
                  boundType == Tightening::UB )
                 farkasParticipants += String( "eq" ) + identifier + "_i1 ";
 
-            if ( !( i == _varToPlc[i]->getParticipatingVariables().front() && bound == 0.0 &&
+            if ( !( i == _varToPlc[i]->getParticipatingVariables().front() && boundMpq == 0.0 &&
                     boundType == Tightening::LB ) )
             {
                 if ( lit > 0 )
@@ -905,11 +921,11 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
         else if ( !_cdclCore && useSplitBound && !overrideGmp )
         {
             String identifier = std::to_string( _varToPlc[i]->getTableauAuxVars().front() );
-            if ( i == _varToPlc[i]->getParticipatingVariables().front() && bound == 0.0 &&
+            if ( i == _varToPlc[i]->getParticipatingVariables().front() && boundMpq == 0.0 &&
                  boundType == Tightening::UB )
                 farkasParticipants += String( "eq" ) + identifier + "_i1 ";
 
-            if ( !( i == _varToPlc[i]->getParticipatingVariables().front() && bound == 0.0 &&
+            if ( !( i == _varToPlc[i]->getParticipatingVariables().front() && boundMpq == 0.0 &&
                     boundType == Tightening::LB ) )
             {
                 if ( i == _varToPlc[i]->getParticipatingVariables().back() )
