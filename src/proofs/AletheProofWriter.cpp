@@ -550,6 +550,19 @@ bool AletheProofWriter::writeReluLemma(
     String negatedSplitsClause = "";
     String causeBound = getBoundAsClause( Tightening( causingVar, targetBound, causingVarBound ) );
 
+    if ( causingVar == relu->getB() &&
+     causingVarBound == Tightening::LB &&
+     affectedVar == relu->getAux() &&
+     affectedVarBound == Tightening::UB &&
+     targetBound == 0 )
+    {
+        // Match the literal used by eq<id>_a0.
+        // (>= x 0.0) and (<= 0.0 x) are equivalent
+        // arithmetically, but not identical resolution pivots.
+        causeBound = String( "(<= 0.0 x" ) +
+                     std::to_string( causingVar ) + ")";
+    }
+
     // Apply calculations of the Farkas lemma, to prove the causing bound
     farkasStrings( explanations.front(),
                    lemmaEntry->id,
@@ -808,6 +821,20 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
 
     linearCombinationMpq( explainedRow, expl );
     bool isLemma = explainedVar >= 0;
+    bool reverseExplanation = false;
+
+    if ( isLemma &&
+         mpq_sgn( explainedRow[explainedVar] ) > 0 )
+    {
+        reverseExplanation = true;
+
+        // Negate the entire equality combination,
+        // not just the target coefficient.
+        for ( unsigned i = 0; i < _n; ++i )
+        {
+            mpq_neg( explainedRow[i], explainedRow[i] );
+        }
+    }
 
     mpq_class lemmaMultiplier( 0 );
 
@@ -815,6 +842,8 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
     {
         lemmaMultiplier =
             -mpq_class( explainedRow[explainedVar] );
+
+        ASSERT( lemmaMultiplier >= 0 );
 
         mpq_add(
             explainedRow[explainedVar],
@@ -839,6 +868,8 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
             farkasClause += String( "(not e" + std::to_string( entry._index ) ) + ")";
 
             mpq_class temp( isUpper ? -entry._value : entry._value );
+            if ( reverseExplanation )
+                temp = -temp;
             farkasArgs += temp.get_str() + " ";
             farkasParticipants += String( "e" + std::to_string( entry._index ) ) + " ";
         }

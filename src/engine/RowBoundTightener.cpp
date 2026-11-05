@@ -20,7 +20,20 @@
 #include "MarabouError.h"
 #include "SparseUnsortedList.h"
 #include "Statistics.h"
+#include <cmath>
+#include <limits>
 
+inline double roundDown( double x )
+{
+    return std::nextafter(
+        x, -std::numeric_limits<double>::infinity() );
+}
+
+inline double roundUp( double x )
+{
+    return std::nextafter(
+        x, std::numeric_limits<double>::infinity() );
+}
 RowBoundTightener::RowBoundTightener( const ITableau &tableau )
     : _tableau( tableau )
     , _boundManager( tableau.getBoundManager() )
@@ -444,125 +457,228 @@ unsigned RowBoundTightener::onePassOverConstraintMatrix()
     return result;
 }
 
+
 unsigned RowBoundTightener::tightenOnSingleConstraintRow( unsigned row )
 {
     /*
-      The cosntraint matrix A satisfies Ax = b.
-      Each row is of the form:
+      A constraint matrix row satisfies:
 
-          sum ci xi - b = 0
+          sum_i ci * xi = b[row]
 
-      We first compute the lower and upper bounds for the expression
+      For each target variable xj, derive:
 
-          sum ci xi - b
-   */
-    unsigned n = _tableau.getN();
+          xj = ( b[row] - sum_{i != j} ci * xi ) / cj
 
-    unsigned result = 0;
+      All intermediate operations are rounded outward to
+      obtain conservative lower and upper bounds.
 
-    const SparseUnsortedList *sparseRow = _tableau.getSparseARow( row );
+      Prefix and suffix sums avoid subtracting the target's
+      contribution from an aggregate containing that target.
+    */
+
+    const SparseUnsortedList *sparseRow =
+        _tableau.getSparseARow( row );
+
     const double *b = _tableau.getRightHandSide();
 
-    double ci;
-    unsigned index;
-
-    // Compute ci * lb, ci * ub, flag signs for all entries
-    enum {
-        ZERO = 0,
-        POSITIVE = 1,
-        NEGATIVE = 2,
+    // These helpers round one representable value outward.
+    const auto roundDown = []( double value ) -> double
+    {
+        return std::nextafter(
+            value, -std::numeric_limits<double>::infinity() );
     };
 
-    std::fill_n( _ciSign, n, ZERO );
-    std::fill_n( _ciTimesLb, n, 0 );
-    std::fill_n( _ciTimesUb, n, 0 );
+    const auto roundUp = []( double value ) -> double
+    {
+        return std::nextafter(
+            value, std::numeric_limits<double>::infinity() );
+    };
 
+    struct Term
+    {
+        unsigned index;
+        double coefficient;
+        double lowerContribution;
+        double upperContribution;
+    };
+
+    Vector<Term> terms;
+
+    // The row coefficients and RHS must represent finite values.
+    if ( !std::isfinite( b[row] ) )
+        return 0;
+
+    /*
+      Step 1: Compute conservative bounds for each term ci * xi.
+
+      The sign of ci determines which variable bound gives
+      the smallest or largest contribution.
+    */
     for ( const auto &entry : *sparseRow )
     {
-        index = entry._index;
-        ci = entry._value;
+        const unsigned index = entry._index;
+        const double ci = entry._value;
 
-        _ciSign[index] = FloatUtils::isPositive( ci ) ? POSITIVE : NEGATIVE;
-        _ciTimesLb[index] = ci * getLowerBound( index );
-        _ciTimesUb[index] = ci * getUpperBound( index );
+        if ( !std::isfinite( ci ) )
+            return 0;
+
+        // A zero coefficient contributes nothing.
+        if ( ci == 0 )
+            continue;
+
+        const double lb = getLowerBound( index );
+        const double ub = getUpperBound( index );
+
+        if ( std::isnan( lb ) || std::isnan( ub ) )
+            return 0;
+
+        // Infinite source bounds are permitted.
+        const double minInput = ci > 0 ? lb : ub;
+        const double maxInput = ci > 0 ? ub : lb;
+
+        const double lowerContribution =
+            roundDown( ci * minInput );
+
+        const double upperContribution =
+            roundUp( ci * maxInput );
+
+        terms.append( {
+            index,
+            ci,
+            lowerContribution,
+            upperContribution
+        } );
+    }
+
+    const unsigned n = terms.size();
+
+    if ( n == 0 )
+        return 0;
+
+    /*
+      Step 2: Compute prefix and suffix interval sums.
+
+      prefixLB[k] bounds the sum of terms [0, k).
+      suffixLB[k] bounds the sum of terms [k, n).
+
+      Every addition is rounded outward.
+    */
+    Vector<double> prefixLB( n + 1, 0.0 );
+    Vector<double> prefixUB( n + 1, 0.0 );
+    Vector<double> suffixLB( n + 1, 0.0 );
+    Vector<double> suffixUB( n + 1, 0.0 );
+
+    for ( unsigned i = 0; i < n; ++i )
+    {
+        prefixLB[i + 1] = roundDown(
+            prefixLB[i] + terms[i].lowerContribution );
+
+        prefixUB[i + 1] = roundUp(
+            prefixUB[i] + terms[i].upperContribution );
+    }
+
+    for ( unsigned i = n; i-- > 0; )
+    {
+        suffixLB[i] = roundDown(
+            suffixLB[i + 1] + terms[i].lowerContribution );
+
+        suffixUB[i] = roundUp(
+            suffixUB[i + 1] + terms[i].upperContribution );
+    }
+
+    // Indeterminate operations involving infinities may yield NaN.
+    // In that case, conservatively skip the row.
+    for ( unsigned i = 0; i <= n; ++i )
+    {
+        if ( std::isnan( prefixLB[i] ) ||
+             std::isnan( prefixUB[i] ) ||
+             std::isnan( suffixLB[i] ) ||
+             std::isnan( suffixUB[i] ) )
+        {
+            return 0;
+        }
     }
 
     /*
-      Do a pass for each of the rhs variables.
-      For this, we wish to logically transform the equation into:
+      Step 3: Tighten each variable.
 
-          xi = 1/ci * ( b - sum cj xj )
-
-      And then compute the upper/lower bounds for xi.
-
-      However, for efficiency, we compute the lower and upper
-      bounds of the expression:
-
-              b - sum ci xi
-
-      Then, when we consider xi we adjust the computed lower and upper
-      bounds accordingly.
+      For target xj, compute the sum of all OTHER terms
+      using the corresponding prefix and suffix intervals.
     */
+    unsigned result = 0;
 
-    for ( const auto &target : *sparseRow )
+    for ( unsigned i = 0; i < n; ++i )
     {
-        index = target._index;
-        ci = target._value;
+        const unsigned index = terms[i].index;
+        const double ci = terms[i].coefficient;
 
-        if ( std::abs( ci ) <
-             GlobalConfiguration::MINIMAL_COEFFICIENT_FOR_TIGHTENING )
-            continue;
-
-        double numeratorLB = b[row];
-        double numeratorUB = b[row];
-
-        for ( const auto &other : *sparseRow )
+        // Preserve Marabou's original coefficient threshold.
+        if ( FloatUtils::lt(
+                 std::abs( ci ),
+                 GlobalConfiguration::MINIMAL_COEFFICIENT_FOR_TIGHTENING ) )
         {
-            if ( other._index == index )
-                continue;
-
-            const double c = other._value;
-            const double lb = getLowerBound( other._index );
-            const double ub = getUpperBound( other._index );
-
-            if ( c >= 0 )
-            {
-                numeratorLB -= c * ub;
-                numeratorUB -= c * lb;
-            }
-            else
-            {
-                numeratorLB -= c * lb;
-                numeratorUB -= c * ub;
-            }
+            continue;
         }
+
+        // Sum all contributions except that of the target.
+        const double otherLB = roundDown(
+            prefixLB[i] + suffixLB[i + 1] );
+
+        const double otherUB = roundUp(
+            prefixUB[i] + suffixUB[i + 1] );
+
+        // Bound b[row] - sum(other terms).
+        const double numeratorLB =
+            roundDown( b[row] - otherUB );
+
+        const double numeratorUB =
+            roundUp( b[row] - otherLB );
 
         double lowerBound;
         double upperBound;
 
+        // Division by a negative coefficient reverses the bounds.
         if ( ci > 0 )
         {
-            lowerBound = numeratorLB / ci;
-            upperBound = numeratorUB / ci;
+            lowerBound = roundDown( numeratorLB / ci );
+            upperBound = roundUp( numeratorUB / ci );
         }
         else
         {
-            lowerBound = numeratorUB / ci;
-            upperBound = numeratorLB / ci;
+            lowerBound = roundDown( numeratorUB / ci );
+            upperBound = roundUp( numeratorLB / ci );
         }
 
-        upperBound = std::nextafter( upperBound, std::numeric_limits<double>::infinity() );
-        lowerBound = std::nextafter( lowerBound, -std::numeric_limits<double>::infinity() );
+        /*
+          Skip unusable candidates.
 
-        result += registerTighterLowerBound( index, lowerBound, *sparseRow );
-        result += registerTighterUpperBound( index, upperBound, *sparseRow );
+          An unbounded or indeterminate result must not be
+          registered as a finite tightening.
+        */
+        if ( std::isfinite( lowerBound ) )
+        {
+            result += registerTighterLowerBound(
+                index, lowerBound, *sparseRow );
+        }
 
-        if ( FloatUtils::gt( getLowerBound( index ), getUpperBound( index ) ) )
+        if ( std::isfinite( upperBound ) )
+        {
+            result += registerTighterUpperBound(
+                index, upperBound, *sparseRow );
+        }
+
+        // Preserve the original infeasibility detection.
+        if ( FloatUtils::gt(
+                 getLowerBound( index ),
+                 getUpperBound( index ) ) )
+        {
             throw InfeasibleQueryException();
+        }
     }
 
     return result;
 }
+
 
 void RowBoundTightener::examinePivotRow()
 {
