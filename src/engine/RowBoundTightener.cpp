@@ -34,6 +34,31 @@ inline double roundUp( double x )
     return std::nextafter(
         x, std::numeric_limits<double>::infinity() );
 }
+
+inline double conservativeBound( double value, Tightening::BoundType type )
+{
+    double ABS_TOLERANCE = GlobalConfiguration::BOUND_COMPARISON_ADDITIVE_TOLERANCE;
+    double REL_TOLERANCE = GlobalConfiguration::BOUND_COMPARISON_MULTIPLICATIVE_TOLERANCE;
+
+    if ( !std::isfinite( value ) )
+        return value;
+
+    double delta = ABS_TOLERANCE + REL_TOLERANCE * std::abs( value );
+
+    if ( type == Tightening::UB )
+        return std::nextafter( value + delta, std::numeric_limits<double>::infinity() );
+
+    return std::nextafter( value - delta, -std::numeric_limits<double>::infinity() );
+}
+
+struct Term
+{
+    unsigned index;
+    double coefficient;
+    double lowerContribution;
+    double upperContribution;
+};
+
 RowBoundTightener::RowBoundTightener( const ITableau &tableau )
     : _tableau( tableau )
     , _boundManager( tableau.getBoundManager() )
@@ -480,28 +505,6 @@ unsigned RowBoundTightener::tightenOnSingleConstraintRow( unsigned row )
         _tableau.getSparseARow( row );
 
     const double *b = _tableau.getRightHandSide();
-
-    // These helpers round one representable value outward.
-    const auto roundDown = []( double value ) -> double
-    {
-        return std::nextafter(
-            value, -std::numeric_limits<double>::infinity() );
-    };
-
-    const auto roundUp = []( double value ) -> double
-    {
-        return std::nextafter(
-            value, std::numeric_limits<double>::infinity() );
-    };
-
-    struct Term
-    {
-        unsigned index;
-        double coefficient;
-        double lowerContribution;
-        double upperContribution;
-    };
-
     Vector<Term> terms;
 
     // The row coefficients and RHS must represent finite values.
@@ -536,18 +539,11 @@ unsigned RowBoundTightener::tightenOnSingleConstraintRow( unsigned row )
         const double minInput = ci > 0 ? lb : ub;
         const double maxInput = ci > 0 ? ub : lb;
 
-        const double lowerContribution =
-            roundDown( ci * minInput );
+        const double lowerContribution = roundDown( ci * minInput );
 
-        const double upperContribution =
-            roundUp( ci * maxInput );
+        const double upperContribution = roundUp( ci * maxInput );
 
-        terms.append( {
-            index,
-            ci,
-            lowerContribution,
-            upperContribution
-        } );
+        terms.append( { index, ci, lowerContribution, upperContribution } );
     }
 
     const unsigned n = terms.size();
@@ -570,34 +566,22 @@ unsigned RowBoundTightener::tightenOnSingleConstraintRow( unsigned row )
 
     for ( unsigned i = 0; i < n; ++i )
     {
-        prefixLB[i + 1] = roundDown(
-            prefixLB[i] + terms[i].lowerContribution );
-
-        prefixUB[i + 1] = roundUp(
-            prefixUB[i] + terms[i].upperContribution );
+        prefixLB[i + 1] = roundDown( prefixLB[i] + terms[i].lowerContribution );
+        prefixUB[i + 1] = roundUp( prefixUB[i] + terms[i].upperContribution );
     }
 
     for ( unsigned i = n; i-- > 0; )
     {
-        suffixLB[i] = roundDown(
-            suffixLB[i + 1] + terms[i].lowerContribution );
-
-        suffixUB[i] = roundUp(
-            suffixUB[i + 1] + terms[i].upperContribution );
+        suffixLB[i] = roundDown( suffixLB[i + 1] + terms[i].lowerContribution );
+        suffixUB[i] = roundUp( suffixUB[i + 1] + terms[i].upperContribution );
     }
 
     // Indeterminate operations involving infinities may yield NaN.
     // In that case, conservatively skip the row.
     for ( unsigned i = 0; i <= n; ++i )
-    {
-        if ( std::isnan( prefixLB[i] ) ||
-             std::isnan( prefixUB[i] ) ||
-             std::isnan( suffixLB[i] ) ||
-             std::isnan( suffixUB[i] ) )
-        {
+        if ( std::isnan( prefixLB[i] ) || std::isnan( prefixUB[i] ) ||
+             std::isnan( suffixLB[i] ) || std::isnan( suffixUB[i] ) )
             return 0;
-        }
-    }
 
     /*
       Step 3: Tighten each variable.
@@ -612,27 +596,13 @@ unsigned RowBoundTightener::tightenOnSingleConstraintRow( unsigned row )
         const unsigned index = terms[i].index;
         const double ci = terms[i].coefficient;
 
-        // Preserve Marabou's original coefficient threshold.
-        if ( FloatUtils::lt(
-                 std::abs( ci ),
-                 GlobalConfiguration::MINIMAL_COEFFICIENT_FOR_TIGHTENING ) )
-        {
-            continue;
-        }
-
         // Sum all contributions except that of the target.
-        const double otherLB = roundDown(
-            prefixLB[i] + suffixLB[i + 1] );
-
-        const double otherUB = roundUp(
-            prefixUB[i] + suffixUB[i + 1] );
+        const double otherLB = roundDown( prefixLB[i] + suffixLB[i + 1] );
+        const double otherUB = roundUp( prefixUB[i] + suffixUB[i + 1] );
 
         // Bound b[row] - sum(other terms).
-        const double numeratorLB =
-            roundDown( b[row] - otherUB );
-
-        const double numeratorUB =
-            roundUp( b[row] - otherLB );
+        const double numeratorLB = roundDown( b[row] - otherUB );
+        const double numeratorUB = roundUp( b[row] - otherLB );
 
         double lowerBound;
         double upperBound;
@@ -655,25 +625,21 @@ unsigned RowBoundTightener::tightenOnSingleConstraintRow( unsigned row )
           An unbounded or indeterminate result must not be
           registered as a finite tightening.
         */
-        if ( std::isfinite( lowerBound ) )
+        if ( GlobalConfiguration::WRITE_ALETHE_PROOF )
         {
-            result += registerTighterLowerBound(
-                index, lowerBound, *sparseRow );
+            upperBound = conservativeBound( upperBound, Tightening::UB );
+            lowerBound = conservativeBound( lowerBound, Tightening::LB );
         }
+
+        if ( std::isfinite( lowerBound ) )
+            result += registerTighterLowerBound( index, lowerBound, *sparseRow );
 
         if ( std::isfinite( upperBound ) )
-        {
-            result += registerTighterUpperBound(
-                index, upperBound, *sparseRow );
-        }
+            result += registerTighterUpperBound( index, upperBound, *sparseRow );
 
         // Preserve the original infeasibility detection.
-        if ( FloatUtils::gt(
-                 getLowerBound( index ),
-                 getUpperBound( index ) ) )
-        {
+        if ( FloatUtils::gt( getLowerBound( index ),  getUpperBound( index ) ) )
             throw InfeasibleQueryException();
-        }
     }
 
     return result;
