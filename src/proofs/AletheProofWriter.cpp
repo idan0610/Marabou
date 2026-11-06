@@ -879,7 +879,18 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
         if ( _cdclCore )
         {
             ASSERT( cdclClause );
-
+            // Only use a previously proved lemma if its phase dependencies are present in the CDCL explanation.
+            if ( isLemmaIncluded )
+            {
+                for ( int lit : gbEntry->clause )
+                {
+                    if ( !cdclClause->exists( lit ) )
+                    {
+                        isLemmaIncluded = false;
+                        break;
+                    }
+                }
+            }
             // Do not introduce a phase-fixing bound unless its corresponding phase literal is already tracked.
             if ( useSplitBound )
             {
