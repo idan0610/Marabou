@@ -392,7 +392,9 @@ private:
                         int explainerVar,
                         bool isUpper,
                         const Set<int> &deps,
-                        UnsatCertificateNode *node );
+                        UnsatCertificateNode *node,
+                        const Set<int> *cdclClause = nullptr );
+
     /*
      Wraps up the subproof of an SnC worker, and derive the disjunction of its negated literals
     */

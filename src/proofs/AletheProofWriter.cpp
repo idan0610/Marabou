@@ -241,7 +241,13 @@ void AletheProofWriter::writeContradiction( const SparseUnsortedList &contradict
         ASSERT( node->getId() == id );
     }
 
-    // Collect all Farkas lemma information
+    const Set<int> *cdclClause = nullptr;
+
+#if BUILD_CADICAL
+    if ( _cdclCore )
+        cdclClause = &_lastContradictionClause;
+#endif
+
     farkasStrings( contradiction,
                    _groundBoundManager.getCounter(),
                    farkasArgs,
@@ -251,16 +257,8 @@ void AletheProofWriter::writeContradiction( const SparseUnsortedList &contradict
                    -id,
                    true,
                    {},
-                   node );
-#ifdef BUILD_CADICAL
-    if ( _cdclCore )
-    {
-        // If used in CDCL, use the numeral clause as the basis for the Alethe clause
-        std::vector<int> contradictionClause =
-            std::vector<int>( _lastContradictionClause.begin(), _lastContradictionClause.end() );
-        negatedSplitsClause += clauseToPhases( contradictionClause );
-    }
-#endif
+                   node,
+                   cdclClause );
 
     farkasClause = String( "(cl " ) + farkasClause + ")";
     farkasArgs = String( "(" ) + farkasArgs + "))\n";
@@ -563,7 +561,13 @@ bool AletheProofWriter::writeReluLemma(
                      std::to_string( causingVar ) + ")";
     }
 
-    // Apply calculations of the Farkas lemma, to prove the causing bound
+    const Set<int> *cdclClause = nullptr;
+
+#if BUILD_CADICAL
+    if ( _cdclCore )
+        cdclClause = &lemmaEntry->clause;
+#endif
+
     farkasStrings( explanations.front(),
                    lemmaEntry->id,
                    farkasArgs,
@@ -573,17 +577,8 @@ bool AletheProofWriter::writeReluLemma(
                    causingVar,
                    causingVarBound == Tightening::UB,
                    lemmaEntry->deps,
-                   NULL );
-#ifdef BUILD_CADICAL
-    if ( _cdclCore )
-    {
-        // Add additional info in CDCL mode
-        std::vector<int> entryClause =
-            std::vector<int>( lemmaEntry->clause.begin(), lemmaEntry->clause.end() );
-
-        negatedSplitsClause += clauseToPhases( entryClause );
-    }
-#endif
+                   NULL,
+                   cdclClause );
 
     farkasClause = String( "(cl " ) + causeBound + farkasClause + ")";
     farkasArgs = String( "(" ) + farkasArgs + "))\n";
@@ -813,7 +808,8 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
                                        int explainedVar,
                                        bool isUpper,
                                        const Set<int> &deps,
-                                       UnsatCertificateNode *node )
+                                       UnsatCertificateNode *node,
+                                       const Set<int> *cdclClause )
 {
     std::vector<mpq_t> explainedRow = std::vector<mpq_t>( _n );
     for ( const auto num : explainedRow )
@@ -866,10 +862,6 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
         const std::shared_ptr<GroundBoundManager::GroundBoundEntry> &gbEntry =
             _groundBoundManager.getGroundBoundEntryUpToId( i, boundType, entryId );
 
-        // For tiny bounds, we ommit the gmp bound for compactness
-        bool overrideGmp = mpq_cmp_si( explainedRow[i], 1, ALETHE_WRITER_PRECISION ) < 0 &&
-                           mpq_cmp_si( explainedRow[i], -1, ALETHE_WRITER_PRECISION ) > 0;
-
         int lemId = gbEntry->lemma ? gbEntry->lemma->getId() : -1;
         mpq_class boundMpq (gbEntry->val);
         String boundStr = boundMpq.get_den().get_str() == "1"
@@ -883,11 +875,25 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
         bool isLemmaIncluded = lemId >= 0 && gbEntry->lemma->getToCheck() &&
                                gbEntry->lemma->wasWritten() && ( !isLemma || deps.exists( lemId ) );
         bool useSplitBound = ( lemId < 0 && gbEntry->isPhaseFixing );
+#if BUILD_CADICAL
+        if ( _cdclCore )
+        {
+            ASSERT( cdclClause );
 
+            // Do not introduce a phase-fixing bound unless its corresponding phase literal is already tracked.
+            if ( useSplitBound )
+            {
+                int phaseLit = _varToPlc[i]->propagatePhaseAsLit();
+
+                if ( !cdclClause->exists( phaseLit ) )
+                    useSplitBound = false;
+            }
+        }
+#endif
         if ( !GlobalConfiguration::DEDICATED_ALETHE_RULE )
             farkasArgs += temp.get_str() + " ";
 
-        if ( ( isLemmaIncluded || useSplitBound ) && !overrideGmp )
+        if ( ( isLemmaIncluded || useSplitBound ) )
             farkasClause += ineqString;
         else
         {
@@ -896,18 +902,17 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
         }
 
         // Add split dependencies of previous lemmas
-        if ( isLemmaIncluded && !overrideGmp )
+        if ( isLemmaIncluded )
         {
             farkasParticipants += String( "rl" ) + _queryId + "_" + std::to_string( lemId ) + " ";
             for ( const auto dep : _idToSplits[gbEntry->id] )
                 if ( !splitDeps.exists( dep ) )
                     splitDeps.append( dep );
         }
-        else if ( useSplitBound && !overrideGmp )
+        else if ( useSplitBound )
             splitDeps.append( Tightening( i, gbEntry->val, boundType ) );
 
-        // Add necessary and sufficient premises for any bound participating in the clauses
-        if ( _cdclCore && useSplitBound && !overrideGmp )
+        if ( _cdclCore && useSplitBound )
         {
             int lit = _varToPlc[i]->propagatePhaseAsLit();
             String identifier = std::to_string( abs( lit ) );
@@ -925,7 +930,7 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
                     farkasParticipants += String( "ri1_" ) + identifier + " ";
             }
         }
-        else if ( !_cdclCore && useSplitBound && !overrideGmp )
+        else if ( !_cdclCore && useSplitBound )
         {
             String identifier = std::to_string( _varToPlc[i]->getTableauAuxVars().front() );
             if ( i == _varToPlc[i]->getParticipatingVariables().front() && boundMpq == 0.0 &&
@@ -948,7 +953,13 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
 
 #if BUILD_CADICAL
     if ( _cdclCore )
+    {
+        ASSERT( cdclClause );
+        // Add the negated CDCL phase dependencies to the resulting resolution clause.
+        std::vector<int> clause( cdclClause->begin(), cdclClause->end() );
+        negatedSplitClause += clauseToPhases( clause );
         return;
+    }
 #endif
     if ( node && GlobalConfiguration::ALETHE_ELABORATE_TERMS )
     {
