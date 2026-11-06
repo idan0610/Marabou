@@ -337,7 +337,15 @@ void ReluConstraint::notifyUpperBound( unsigned variable, double newBound )
                     // If b has a non-positive upper bound, f's upper bound is 0
                     if ( proofs )
                         _boundManager->addLemmaExplanationAndTightenBound(
-                            _f, 0, Tightening::UB, { variable }, Tightening::UB, *this, true, FloatUtils::max( bound, -GlobalConfiguration::LEMMA_CERTIFICATION_TOLERANCE ) );
+                            _f,
+                            0,
+                            Tightening::UB,
+                            { variable },
+                            Tightening::UB,
+                            *this,
+                            true,
+                            FloatUtils::max(
+                                bound, -GlobalConfiguration::LEMMA_CERTIFICATION_TOLERANCE ) );
                     else
                         _boundManager->tightenUpperBound( _f, 0 );
 
@@ -1195,7 +1203,7 @@ void ReluConstraint::booleanAbstraction(
     }
     else
     {
-        ASSERT(_cdclVars.size() == 1);
+        ASSERT( _cdclVars.size() == 1 );
         idx = _cdclVars.front();
     }
 
@@ -1243,7 +1251,8 @@ bool ReluConstraint::isBoundFixingPhase( unsigned int var,
     }
     else if ( getPhaseStatus() == RELU_PHASE_INACTIVE )
     {
-        if ( (var == _b || var == _f ) && boundType == Tightening::UB && FloatUtils::isNegative( bound ) )
+        if ( ( var == _b || var == _f ) && boundType == Tightening::UB &&
+             FloatUtils::isNegative( bound ) )
             return true;
 
         if ( _auxVarInUse && var == _aux && boundType == Tightening::LB &&

@@ -17,22 +17,20 @@
 
 #include "Debug.h"
 #include "InfeasibleQueryException.h"
-#include "MarabouError.h"
 #include "SparseUnsortedList.h"
 #include "Statistics.h"
+
 #include <cmath>
 #include <limits>
 
 inline double roundDown( double x )
 {
-    return std::nextafter(
-        x, -std::numeric_limits<double>::infinity() );
+    return std::nextafter( x, -std::numeric_limits<double>::infinity() );
 }
 
 inline double roundUp( double x )
 {
-    return std::nextafter(
-        x, std::numeric_limits<double>::infinity() );
+    return std::nextafter( x, std::numeric_limits<double>::infinity() );
 }
 
 inline double conservativeBound( double value, Tightening::BoundType type )
@@ -501,8 +499,7 @@ unsigned RowBoundTightener::tightenOnSingleConstraintRow( unsigned row )
       contribution from an aggregate containing that target.
     */
 
-    const SparseUnsortedList *sparseRow =
-        _tableau.getSparseARow( row );
+    const SparseUnsortedList *sparseRow = _tableau.getSparseARow( row );
 
     const double *b = _tableau.getRightHandSide();
     Vector<Term> terms;
@@ -579,8 +576,8 @@ unsigned RowBoundTightener::tightenOnSingleConstraintRow( unsigned row )
     // Indeterminate operations involving infinities may yield NaN.
     // In that case, conservatively skip the row.
     for ( unsigned i = 0; i <= n; ++i )
-        if ( std::isnan( prefixLB[i] ) || std::isnan( prefixUB[i] ) ||
-             std::isnan( suffixLB[i] ) || std::isnan( suffixUB[i] ) )
+        if ( std::isnan( prefixLB[i] ) || std::isnan( prefixUB[i] ) || std::isnan( suffixLB[i] ) ||
+             std::isnan( suffixUB[i] ) )
             return 0;
 
     /*
@@ -638,7 +635,7 @@ unsigned RowBoundTightener::tightenOnSingleConstraintRow( unsigned row )
             result += registerTighterUpperBound( index, upperBound, *sparseRow );
 
         // Preserve the original infeasibility detection.
-        if ( FloatUtils::gt( getLowerBound( index ),  getUpperBound( index ) ) )
+        if ( FloatUtils::gt( getLowerBound( index ), getUpperBound( index ) ) )
             throw InfeasibleQueryException();
     }
 

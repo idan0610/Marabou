@@ -168,9 +168,9 @@ void Engine::applySnCSplit( PiecewiseLinearCaseSplit sncSplit, String queryId )
     {
         PiecewiseLinearConstraint *plc = _varToPLC[bound._variable];
         // TODO extend to other plcs
-        if (!plc->phaseFixed() && plc->getType() == RELU )
+        if ( !plc->phaseFixed() && plc->getType() == RELU )
         {
-            ReluConstraint *relu = ( ReluConstraint * )plc;
+            ReluConstraint *relu = (ReluConstraint *)plc;
             if ( relu->getActiveSplit().getBoundTightenings().exists( bound ) )
                 relu->setPhaseStatus( RELU_PHASE_ACTIVE );
             else if ( relu->getInactiveSplit().getBoundTightenings().exists( bound ) )
@@ -292,13 +292,11 @@ void Engine::initializeSolver()
                 _cdclCore.connectProofWriter( _aletheWriter );
 
 
-
             if ( _sncMode && _queryId != "1" )
             {
                 _aletheWriter->writeDummyRules();
                 _aletheWriter->writeSncAnchor();
             }
-
         }
 
         if ( !_solveWithCDCL )
@@ -3691,8 +3689,8 @@ void Engine::explainSimplexFailure()
         if ( !_solveWithCDCL && GlobalConfiguration::WRITE_ALETHE_PROOF )
         {
             _aletheWriter->writeContradiction( sparseContradictionToAnalyse,
-                                              _UNSATCertificateCurrentPointer->get()->getId(),
-                                              *_UNSATCertificateCurrentPointer );
+                                               _UNSATCertificateCurrentPointer->get()->getId(),
+                                               *_UNSATCertificateCurrentPointer );
             return;
         }
         else if ( GlobalConfiguration::WRITE_ALETHE_PROOF )
@@ -4028,18 +4026,19 @@ bool Engine::certifyUNSATCertificate()
         {
             std::vector<int> clause( _aletheWriter->getLastContradictionClause().begin(),
                                      _aletheWriter->getLastContradictionClause().end() );
-            unsigned finalId =  _statistics.getUnsignedAttribute( Statistics::NUM_CERTIFIED_LEAVES );
+            unsigned finalId = _statistics.getUnsignedAttribute( Statistics::NUM_CERTIFIED_LEAVES );
 
             // In SnC mode, wrap up the worker's subproof
-            std::vector<int64_t > ant = {};
+            std::vector<int64_t> ant = {};
             if ( _sncMode && !clause.empty() )
             {
-                // Iterate through snc literals to maintain correct order and indices of LitAssumptions
+                // Iterate through snc literals to maintain correct order and indices of
+                // LitAssumptions
                 for ( int lit : _cdclCore.getSncLits() )
                 {
-                    if ( _aletheWriter->getLastContradictionClause().exists(  lit ) )
+                    if ( _aletheWriter->getLastContradictionClause().exists( lit ) )
                     {
-                        _aletheWriter->writeSncLitAssumption(finalId, lit );
+                        _aletheWriter->writeSncLitAssumption( finalId, lit );
                         ant.insert( ant.end(), finalId++ );
                     }
                     else

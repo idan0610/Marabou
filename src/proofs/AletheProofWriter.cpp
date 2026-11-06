@@ -452,17 +452,14 @@ AletheProofWriter::getNegatedSplitsClause( const List<PiecewiseLinearCaseSplit> 
 
 String AletheProofWriter::getBoundAsClause( const Tightening &bound ) const
 {
-    mpq_class boundMpq (bound._value);
-    String boundStr = boundMpq.get_den().get_str() == "1"
-                            ? boundMpq.get_str() + ".0"
-                            : boundMpq.get_str();
+    mpq_class boundMpq( bound._value );
+    String boundStr =
+        boundMpq.get_den().get_str() == "1" ? boundMpq.get_str() + ".0" : boundMpq.get_str();
 
     if ( bound._type == Tightening::UB )
-        return String( "(<= x" + std::to_string( bound._variable ) + " " ) +
-               boundStr + ")";
+        return String( "(<= x" + std::to_string( bound._variable ) + " " ) + boundStr + ")";
 
-    return String( "(>= x" + std::to_string( bound._variable ) + " " ) +
-           boundStr + ")";
+    return String( "(>= x" + std::to_string( bound._variable ) + " " ) + boundStr + ")";
 }
 
 String AletheProofWriter::getSplitAsClause( const PiecewiseLinearCaseSplit &split ) const
@@ -548,18 +545,10 @@ bool AletheProofWriter::writeReluLemma(
     String negatedSplitsClause = "";
     String causeBound = getBoundAsClause( Tightening( causingVar, targetBound, causingVarBound ) );
 
-    if ( causingVar == relu->getB() &&
-     causingVarBound == Tightening::LB &&
-     affectedVar == relu->getAux() &&
-     affectedVarBound == Tightening::UB &&
-     targetBound == 0 )
-    {
-        // Match the literal used by eq<id>_a0.
-        // (>= x 0.0) and (<= 0.0 x) are equivalent
-        // arithmetically, but not identical resolution pivots.
-        causeBound = String( "(<= 0.0 x" ) +
-                     std::to_string( causingVar ) + ")";
-    }
+    if ( causingVar == relu->getB() && causingVarBound == Tightening::LB &&
+         affectedVar == relu->getAux() && affectedVarBound == Tightening::UB && targetBound == 0 )
+        causeBound = String( "(<= 0.0 x" ) + std::to_string( causingVar ) + ")";
+
 
     const Set<int> *cdclClause = nullptr;
 
@@ -823,9 +812,7 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
     {
         mpq_class lemmaMultiplier( 1 );
         mpq_add(
-            explainedRow[explainedVar],
-            explainedRow[explainedVar],
-            lemmaMultiplier.get_mpq_t() );
+            explainedRow[explainedVar], explainedRow[explainedVar], lemmaMultiplier.get_mpq_t() );
     }
 
     farkasClause = "";
@@ -863,15 +850,13 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
             _groundBoundManager.getGroundBoundEntryUpToId( i, boundType, entryId );
 
         int lemId = gbEntry->lemma ? gbEntry->lemma->getId() : -1;
-        mpq_class boundMpq (gbEntry->val);
-        String boundStr = boundMpq.get_den().get_str() == "1"
-                                ? boundMpq.get_str() + ".0"
-                                : boundMpq.get_str();
-        String ineqString = useEntryUpperBound
-                              ? String( "(not (<= x" + std::to_string( i ) + " " ) +
-                                    boundStr + ")) "
-                              : String( "(not (<= " ) + boundStr + " x" +
-                                    std::to_string( i ) + ")) ";
+        mpq_class boundMpq( gbEntry->val );
+        String boundStr =
+            boundMpq.get_den().get_str() == "1" ? boundMpq.get_str() + ".0" : boundMpq.get_str();
+        String ineqString =
+            useEntryUpperBound
+                ? String( "(not (<= x" + std::to_string( i ) + " " ) + boundStr + ")) "
+                : String( "(not (<= " ) + boundStr + " x" + std::to_string( i ) + ")) ";
         bool isLemmaIncluded = lemId >= 0 && gbEntry->lemma->getToCheck() &&
                                gbEntry->lemma->wasWritten() && ( !isLemma || deps.exists( lemId ) );
         bool useSplitBound = ( lemId < 0 && gbEntry->isPhaseFixing );
@@ -879,7 +864,8 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
         if ( _cdclCore )
         {
             ASSERT( cdclClause );
-            // Only use a previously proved lemma if its phase dependencies are present in the CDCL explanation.
+            // Only use a previously proved lemma if its phase dependencies are present in the CDCL
+            // explanation.
             if ( isLemmaIncluded )
                 for ( int lit : gbEntry->clause )
                     if ( !cdclClause->exists( lit ) )
@@ -888,7 +874,8 @@ void AletheProofWriter::farkasStrings( const SparseUnsortedList &expl,
                         break;
                     }
 
-            // Do not introduce a phase-fixing bound unless its corresponding phase literal is already tracked.
+            // Do not introduce a phase-fixing bound unless its corresponding phase literal is
+            // already tracked.
             if ( useSplitBound )
             {
                 int phaseLit = _varToPlc[i]->propagatePhaseAsLit();
