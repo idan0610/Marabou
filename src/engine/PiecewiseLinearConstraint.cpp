@@ -73,7 +73,6 @@ bool PiecewiseLinearConstraint::isActive() const
 
 void PiecewiseLinearConstraint::registerBoundManager( IBoundManager *boundManager )
 {
-//    ASSERT( _boundManager == nullptr );
     _boundManager = boundManager;
 }
 
@@ -164,22 +163,16 @@ void PiecewiseLinearConstraint::initializeDuplicateCDOs( PiecewiseLinearConstrai
     {
         ASSERT( clone->_cdConstraintActive != nullptr );
         clone->_cdConstraintActive = nullptr;
-//        clone->initializeCDActiveStatus();
-//        clone->setActiveConstraint( this->isActive() );
 
         ASSERT( clone->_cdPhaseStatus != nullptr );
         clone->_cdPhaseStatus = nullptr;
-//        clone->initializeCDPhaseStatus();
-//        clone->setPhaseStatus( this->getPhaseStatus() );
 
         ASSERT( clone->_cdInfeasibleCases != nullptr );
         clone->_cdInfeasibleCases = nullptr;
-//        clone->initializeCDInfeasibleCases();
-        // Does not copy contents
 
+        // Does not copy contents
         ASSERT( clone->_cdPhaseFixingEntry != nullptr )
         clone->_cdPhaseFixingEntry = nullptr;
-//        clone->initializeCDPhaseFixingEntry();
 
         clone->_context = nullptr;
     }

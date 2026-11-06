@@ -45,7 +45,8 @@ public:
         if ( it == tightenings.end() )
             return;
 
-        TS_ASSERT_DELTA( it->_value, expected, 5 * GlobalConfiguration::BOUND_COMPARISON_ADDITIVE_TOLERANCE );
+        TS_ASSERT_DELTA(
+            it->_value, expected, 5 * GlobalConfiguration::BOUND_COMPARISON_ADDITIVE_TOLERANCE );
     }
 
     void setUp()

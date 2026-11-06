@@ -835,7 +835,8 @@ bool CdclCore::solveWithCDCL( double timeoutInSeconds )
         if ( _engine->solve( _timeoutInSeconds ) )
         {
             _engine->setExitCode( ExitCode::SAT );
-            if ( GlobalConfiguration::WRITE_ALETHE_PROOF && !Options::get()->getBool( Options::DNC_MODE ) )
+            if ( GlobalConfiguration::WRITE_ALETHE_PROOF &&
+                 !Options::get()->getBool( Options::DNC_MODE ) )
                 _engine->deleteProofIfExists();
             return true;
         }

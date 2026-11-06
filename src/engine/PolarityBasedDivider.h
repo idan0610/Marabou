@@ -16,9 +16,8 @@
 #ifndef __PolarityBasedDivider_h__
 #define __PolarityBasedDivider_h__
 
-#include "List.h"
-#include "QueryDivider.h"
 #include "IEngine.h"
+#include "QueryDivider.h"
 
 #include <math.h>
 

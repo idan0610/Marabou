@@ -340,7 +340,8 @@ bool SearchTreeHandler::popSplit()
         {
             _engine->getUNSATCertificateCurrentPointer()->deleteUnusedLemmas();
             if ( GlobalConfiguration::WRITE_ALETHE_PROOF )
-                _engine->getAletheWriter()->writeChildrenConclusion( _engine->getUNSATCertificateCurrentPointer() );
+                _engine->getAletheWriter()->writeChildrenConclusion(
+                    _engine->getUNSATCertificateCurrentPointer() );
         }
 
         popContext();
